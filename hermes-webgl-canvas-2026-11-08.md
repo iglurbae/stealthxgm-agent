@@ -1,0 +1,21 @@
+# WebGL / Canvas findings — 2026-11-08
+
+VERDICT: NOT POSSIBLE as a supported configuration or verified public drop-in fix for the GPU-less ANGLE+SwiftShader stack. I found no available, verified method that reproduces both a specified real GPU’s WebGL reporting and arbitrary Canvas 2D pixels. Reporting-only imitation is possible, and published WebGL tables DO exist. This is not a claim that bespoke software emulation is physically impossible.
+
+## Findings
+
+- **Published parameters/extensions: YES.** `zendriver-stealth 0.12.7` publishes an [RTX 4090 capture](https://docs.rs/crate/zendriver-stealth/0.12.7/source/data/gpu-tiers/d3d11-fl11-nvidia.json), labelled `probed`, for Chrome 150.0.7871.186 on Windows 10.0.21996 / ANGLE D3D11. It includes WebGL1/2 parameters, extensions and shader precision. Its [generated tables](https://docs.rs/crate/zendriver-stealth/0.12.7/source/src/gpu/tiers.rs) expose static capabilities; mutable context state is deliberately delegated. I verified the published files, not their hardware origin. These are stack-specific captures, not canonical values valid for every RTX 4090, OS, driver or browser. No equivalent verified RX 6800 capture was established here.
+
+- **ANGLE/SwiftShader GPU-profile setting: NO.** Current [SwiftShader configuration](https://github.com/google/swiftshader/blob/master/src/System/SwiftConfig.hpp) covers CPU scheduling/affinity and profiling, not GPU-model limits/extensions. [SwiftShader device limits](https://github.com/google/swiftshader/blob/master/src/Vulkan/VkPhysicalDevice.cpp) and [ANGLE’s Vulkan capability mapping](https://github.com/google/angle/blob/main/src/libANGLE/renderer/vulkan/vk_caps_utils.cpp) describe the actual implementation. Native query overrides using a measured capture can change reported answers, but do not implement missing extension behavior or change rendered pixels.
+
+- **Alternative software GL: not a specific-GPU emulator.** [Mesa llvmpipe](https://docs.mesa3d.org/drivers/llvmpipe.html) is a genuine CPU rasterizer, not an RX 6800/RTX 4090 replica. Mesa has [extension/version overrides](https://docs.mesa3d.org/envvars.html), but these are not a hardware-accurate rendering profile and do not configure SwiftShader.
+
+- **Canvas cannot be reconstructed from a capability table.** Chromium uses [Skia](https://skia.org/docs/); output depends on drawing inputs, rendering backend, browser/platform, fonts/text engine and rasterization details. There is no universal “GPU model → Canvas pixels” table. Forcing SwiftShader for WebGL also does not alone identify the Canvas backend: Chromium documents a [WebGL-only SwiftShader fallback](https://chromium.googlesource.com/chromium/src/+/refs/heads/main/docs/gpu/swiftshader.md) with software rendering elsewhere.
+
+- **Custom emulation has a published claim, not a verified available implementation.** [Raphaël Mille’s article](https://raphaelmille.com/blog/emulating-nvidia-canvas/) describes privately modified Chromium/SwiftShader reproducing NVIDIA Windows rendering against an RTX 3090 reference, plus Radeon 880M emulation. The method changes rasterization, sampling, rounding, shader transformations and text rendering. The author explicitly withholds source. I could not execute or validate it, or establish support for the requested RX 6800/RTX 4090 stack. Thus “no one has described a method” would be false; “there is a verified public solution to install here” is unsupported.
+
+## CreepJS interpretation
+
+Upstream [WebGL code](https://github.com/abrahamjuliot/creepjs/blob/master/src/webgl/index.ts) displays `params(N)` / `exts(N)` as collection counts, not mismatch counts; extensions concatenate WebGL1 and WebGL2 lists. Its suspicious-capability checks use capability-summary/GPU-brand allowlists. The [Canvas suspicious-pixel check](https://github.com/abrahamjuliot/creepjs/blob/master/src/canvas/index.ts) uses a tiny browser-engine-specific pixel allowlist, not an exact GPU-model database. Plain Chromium receiving the same flags is compatible with an environment/allowlist false positive; it does not establish a specific-GPU pixel mismatch.
+
+Authentic matching output requires the target GPU and matched graphics/browser/font stack, locally, through GPU passthrough, or on a remote rendering host. That replaces SwiftShader; it does not configure SwiftShader to become that GPU.

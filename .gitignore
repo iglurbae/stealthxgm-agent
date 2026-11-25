@@ -1,0 +1,27 @@
+# Live data — NEVER commit (credentials, cookies, sessions)
+gui/data/
+launcher/sessions.json
+browser_profiles/
+kernels/
+backups/
+# Build output (regenerable from source)
+dist/
+installer/build/
+installer/deb/
+# Python
+__pycache__/
+*.pyc
+*.pyo
+# Backups & quarantine
+*.bak
+*.corrupt-*
+*.orig
+# Runtime
+*.pid
+*.lock
+rea-adspower/
+.fix-backups/
+.codegraph/
+
+# P-16: laporan live stealth check (artefak per-run, bukan source)
+tests/live-reports/

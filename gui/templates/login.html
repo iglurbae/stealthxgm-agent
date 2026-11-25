@@ -1,0 +1,89 @@
+<!doctype html>
+<html lang="id">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>StealthXGM — Login</title>
+<style>
+  /* StealthXGM "Bara" — identitas visual sendiri (2026-11-07, Fase 4).
+     Tinta gelap + amber. Logika form tidak diubah (id + endpoint sama). */
+  body { font-family: system-ui, sans-serif; background: #0d0f14; color: #eef1f6;
+         display: flex; align-items: center; justify-content: center;
+         min-height: 100vh; margin: 0; }
+  .wrap { width: 320px; text-align: center; }
+  .mark { margin-bottom: 14px; }
+  form { background: #171b25; border: 1px solid #272e3d; padding: 28px 28px 24px;
+         border-radius: 16px; width: 320px; box-sizing: border-box;
+         box-shadow: 0 12px 40px rgba(0,0,0,.5); text-align: left; }
+  h1 { font-size: 20px; margin: 0 0 4px; letter-spacing: -.02em; }
+  p { color: #9aa3b2; font-size: 13px; margin: 0 0 16px; }
+  label { display: block; font-size: 13px; color: #9aa3b2; margin-bottom: 4px; }
+  input { width: 100%; box-sizing: border-box; padding: 10px 12px;
+          border: 1px solid #272e3d; border-radius: 9px; background: #0d0f14;
+          color: #eef1f6; font-size: 15px; margin-bottom: 12px; }
+  input:focus { outline: 2px solid #f5a524; outline-offset: -1px; border-color: #f5a524; }
+  button { width: 100%; padding: 11px; border: 0; border-radius: 9px;
+           background: #f5a524; color: #1a1206; font-size: 15px; font-weight: 700;
+           cursor: pointer; }
+  button:hover { filter: brightness(1.08); }
+  button:disabled { opacity: .6; }
+  #err { color: #f87171; font-size: 13px; min-height: 18px; margin-top: 10px; }
+  .foot { color: #6b7386; font-size: 12px; margin-top: 14px; text-align: center; }
+</style>
+</head>
+<body>
+<div class="wrap">
+  <div class="mark">
+    <svg width="46" height="46" viewBox="0 0 34 34" aria-hidden="true"><rect x="2" y="8" width="26" height="20" rx="5" fill="#2b3242"/><rect x="5" y="5" width="26" height="20" rx="5" fill="#f5a524" opacity=".55"/><rect x="8" y="2" width="26" height="20" rx="5" fill="#f5a524"/><circle cx="14" cy="9" r="1.6" fill="#1a1206"/><circle cx="19" cy="9" r="1.6" fill="#1a1206"/><circle cx="24" cy="9" r="1.6" fill="#1a1206"/><rect x="12" y="15" width="18" height="2.4" rx="1.2" fill="#1a1206" opacity=".55"/></svg>
+  </div>
+  <form id="f">
+    <h1>StealthXGM</h1>
+    <p id="sub">Masukkan password operator untuk lanjut.</p>
+    <label for="pw">Password</label>
+    <input id="pw" type="password" autocomplete="current-password" autofocus>
+    <button type="submit" id="btn">Masuk</button>
+    <div id="err"></div>
+  </form>
+  <div class="foot">Mode lokal — satu password operator. Sesi 12 jam.</div>
+</div>
+<script>
+(function () {
+  var f = document.getElementById('f');
+  var pw = document.getElementById('pw');
+  var err = document.getElementById('err');
+  var sub = document.getElementById('sub');
+  var btn = document.getElementById('btn');
+  fetch('/api/auth/status').then(function (r) { return r.json(); }).then(function (d) {
+    if (d.setup_required) {
+      sub.textContent = 'Belum ada password — buat password operator (min 8 karakter).';
+      btn.textContent = 'Buat password & masuk';
+      f.dataset.mode = 'setup';
+    }
+  });
+  f.addEventListener('submit', function (e) {
+    e.preventDefault();
+    err.textContent = '';
+    btn.disabled = true;
+    var url = f.dataset.mode === 'setup' ? '/api/auth/setup' : '/api/auth/login';
+    fetch(url, { method: 'POST', headers: {'Content-Type': 'application/json'},
+                 body: JSON.stringify({ password: pw.value }) })
+      .then(function (r) { return r.json().then(function (d) { return { s: r.status, d: d }; }); })
+      .then(function (x) {
+        if (x.s === 429) { err.textContent = x.d.error; }
+        else if (!x.d.ok) { err.textContent = x.d.error || 'gagal'; }
+        else if (f.dataset.mode === 'setup') {
+          return fetch('/api/auth/login', { method: 'POST',
+            headers: {'Content-Type': 'application/json'},
+            body: JSON.stringify({ password: pw.value }) })
+            .then(function (r) { return r.json(); })
+            .then(function (d) { if (d.ok) location.href = '/'; else err.textContent = d.error || 'gagal login'; });
+        }
+        else { location.href = '/'; }
+      })
+      .catch(function () { err.textContent = 'tidak bisa menghubungi GUI'; })
+      .finally(function () { btn.disabled = false; });
+  });
+})();
+</script>
+</body>
+</html>

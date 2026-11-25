@@ -1,0 +1,1705 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0">
+<title>StealthXGM</title>
+<style>
+/* ── StealthXGM "Bara" — identitas visual sendiri (2026-11-07, Fase 4) ──
+   Tinta gelap + amber. Bukan biru lama (#4f8cff), bukan warna AdsPower.
+   Semua id + nama fungsi JS dipertahankan — yang berubah hanya tampilan. */
+:root {
+  --bg:#0d0f14; --bg2:#10131a; --card:#171b25; --card2:#1d2331;
+  --border:#272e3d; --border2:#323a4d;
+  --txt:#eef1f6; --dim:#9aa3b2; --dim2:#6b7386;
+  --acc:#f5a524; --acc-ink:#1a1206; --acc-soft:rgba(245,165,36,.12);
+  --teal:#2dd4bf; --ok:#34d399; --warn:#fbbf24; --err:#f87171;
+  --radius:14px;
+}
+* { box-sizing:border-box; margin:0; padding:0; }
+html { scrollbar-color:#323a4d var(--bg); }
+body { background:var(--bg); color:var(--txt); font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",system-ui,sans-serif; font-size:14px; line-height:1.45; }
+a { color:var(--acc); }
+::selection { background:rgba(245,165,36,.35); }
+
+/* ── Kerangka: sidebar kiri + konten ── */
+#shell { display:flex; min-height:100vh; }
+#side { width:232px; flex:0 0 232px; background:var(--bg2); border-right:1px solid var(--border);
+  padding:18px 14px; position:sticky; top:0; height:100vh; display:flex; flex-direction:column; gap:4px; }
+.brand { display:flex; align-items:center; gap:10px; padding:2px 6px 14px; border-bottom:1px solid var(--border); margin-bottom:12px; }
+.brand svg { flex:0 0 34px; }
+.brand b { font-size:17px; letter-spacing:-.02em; display:block; line-height:1.1; }
+.brand span { font-size:11px; color:var(--dim); display:block; }
+.navlbl { font-size:11px; letter-spacing:.08em; text-transform:uppercase; color:var(--dim2); padding:10px 10px 5px; }
+.navbtn { display:flex; align-items:center; gap:10px; width:100%; text-align:left; background:transparent;
+  border:0; border-left:3px solid transparent; color:var(--dim); padding:9px 10px; border-radius:0 9px 9px 0;
+  font-size:14px; cursor:pointer; }
+.navbtn:hover { background:var(--card); color:var(--txt); }
+.navbtn.on { background:var(--acc-soft); color:var(--acc); border-left-color:var(--acc); font-weight:600; }
+.navbtn .ic { width:18px; text-align:center; font-size:15px; }
+.navbtn .cnt { margin-left:auto; font-size:11px; background:var(--card2); border:1px solid var(--border);
+  color:var(--dim); border-radius:9px; padding:0 7px; }
+.navbtn.on .cnt { background:transparent; border-color:var(--acc); color:var(--acc); }
+#sideFoot { margin-top:auto; border-top:1px solid var(--border); padding-top:12px; display:flex; flex-direction:column; gap:8px; }
+#sideFoot .meta { margin:0; }
+#logoutBtn { display:none; }
+main { flex:1; min-width:0; padding:22px 26px 60px; max-width:1060px; }
+.vhead { margin-bottom:16px; }
+.vhead h2 { font-size:22px; letter-spacing:-.02em; }
+.vhead p { color:var(--dim); font-size:13px; margin-top:2px; }
+.stats { display:flex; gap:10px; flex-wrap:wrap; margin-top:12px; }
+.stat { background:var(--card); border:1px solid var(--border); border-radius:var(--radius); padding:10px 16px; min-width:120px; }
+.stat b { font-size:20px; display:block; letter-spacing:-.02em; }
+.stat span { font-size:12px; color:var(--dim); }
+.stat b.run { color:var(--ok); }
+
+/* ── Komponen umum ── */
+.bar { display:flex; gap:8px; margin-bottom:14px; flex-wrap:wrap; align-items:center; }
+input,select,textarea { background:var(--card); border:1px solid var(--border); color:var(--txt);
+  border-radius:9px; padding:10px 12px; font-size:14px; width:100%; }
+input:focus,select:focus,textarea:focus { outline:2px solid var(--acc); outline-offset:-1px; border-color:var(--acc); }
+button { background:var(--acc); color:var(--acc-ink); border:none; border-radius:9px; padding:10px 16px;
+  font-size:14px; font-weight:600; cursor:pointer; }
+button:hover { filter:brightness(1.08); }
+button:disabled { opacity:.55; cursor:default; }
+button.ghost { background:var(--card); border:1px solid var(--border); color:var(--txt); font-weight:500; }
+button.danger { background:#3a1d1d; border:1px solid #7f2d2d; color:#fca5a5; font-weight:500; }
+button.small { padding:6px 10px; font-size:12px; }
+.card { background:var(--card); border:1px solid var(--border); border-radius:var(--radius); padding:16px; margin-bottom:12px; }
+.card h3 { font-size:15px; margin-bottom:6px; letter-spacing:-.01em; }
+.meta { color:var(--dim); font-size:12px; display:flex; gap:10px; flex-wrap:wrap; margin:6px 0; }
+.badge { display:inline-block; padding:2px 8px; border-radius:10px; font-size:11px; background:var(--card2); border:1px solid var(--border); color:var(--dim); }
+.badge.running { background:rgba(52,211,153,.14); border-color:rgba(52,211,153,.4); color:var(--ok); }
+.badge.idle { background:var(--card2); color:var(--dim); }
+.badge.amber { background:var(--acc-soft); border-color:rgba(245,165,36,.45); color:var(--acc); }
+.row { display:flex; gap:8px; flex-wrap:wrap; margin-top:8px; }
+.flag-grid { display:grid; grid-template-columns:1fr 1fr; gap:6px; margin:8px 0; }
+.flag-cat { margin-top:12px; }
+.flag-cat h4 { font-size:13px; color:var(--acc); margin-bottom:6px; text-transform:capitalize; }
+.flag { display:flex; align-items:center; gap:8px; font-size:13px; padding:6px 8px; background:var(--bg2); border-radius:8px; border:1px solid var(--border); }
+.flag input { width:auto; }
+label.lbl { display:block; font-size:12px; color:var(--dim); margin:10px 0 4px; }
+.adv { border-left:3px solid var(--ok); padding-left:10px; margin:10px 0; }
+.adv .tag { font-size:10px; background:var(--ok); color:#000; padding:1px 6px; border-radius:4px; font-weight:bold; }
+.hidden { display:none !important; }
+#toast { position:fixed; bottom:20px; left:50%; transform:translateX(-50%); background:#22262f; border:1px solid var(--border2);
+  padding:10px 20px; border-radius:10px; display:none; z-index:99; box-shadow:0 6px 30px rgba(0,0,0,.5); }
+.view { animation:fade .18s ease; }
+@keyframes fade { from { opacity:0; transform:translateY(4px); } to { opacity:1; transform:none; } }
+
+/* ── Kartu profil (grid) ── */
+.plist { display:grid; grid-template-columns:repeat(auto-fill,minmax(330px,1fr)); gap:12px; }
+.plist .card { margin-bottom:0; display:flex; flex-direction:column; }
+.pcard-top { display:flex; gap:12px; align-items:flex-start; }
+.avatar { flex:0 0 44px; width:44px; height:44px; border-radius:12px; display:flex; align-items:center; justify-content:center;
+  font-weight:700; font-size:15px; color:#0d0f14; }
+.av-windows { background:linear-gradient(135deg,#f5a524,#f97316); }
+.av-macos { background:linear-gradient(135deg,#2dd4bf,#0ea5e9); }
+.av-linux { background:linear-gradient(135deg,#a78bfa,#6366f1); }
+.av-android { background:linear-gradient(135deg,#34d399,#22c55e); }
+.av-ios { background:linear-gradient(135deg,#f472b6,#a855f7); }
+.pcard-top h3 { flex:1; min-width:0; overflow:hidden; text-overflow:ellipsis; white-space:nowrap; }
+.chips { display:flex; gap:6px; flex-wrap:wrap; margin:8px 0 4px; }
+.chip { font-size:11px; background:var(--bg2); border:1px solid var(--border); color:var(--dim);
+  border-radius:8px; padding:2px 8px; }
+.pcard-actions { margin-top:auto; padding-top:10px; }
+
+/* ── Tabel kecil (cek sidik / job) ── */
+table.mini { width:100%; border-collapse:collapse; font-size:12px; margin-top:8px; }
+table.mini th, table.mini td { text-align:left; padding:6px 8px; border-bottom:1px solid var(--border); vertical-align:top; }
+table.mini th { color:var(--dim); font-weight:600; }
+.pill { display:inline-block; padding:1px 8px; border-radius:9px; font-size:11px; }
+.pill.ok { background:rgba(52,211,153,.15); color:var(--ok); }
+.pill.bad { background:rgba(248,113,113,.15); color:var(--err); }
+.pill.info { background:var(--card2); color:var(--dim); }
+.prog { height:8px; background:var(--bg2); border-radius:5px; overflow:hidden; margin-top:4px; }
+.prog i { display:block; height:100%; background:var(--acc); }
+.kv { display:grid; grid-template-columns:150px 1fr; gap:4px 12px; font-size:13px; margin:8px 0; }
+.kv dt { color:var(--dim); } .kv dd { overflow-wrap:anywhere; }
+#storageWarn { background:#3a1d1d; border:1px solid #a33; color:#f0b0b0; padding:10px 14px; border-radius:10px; margin:10px 0; }
+
+/* ── Responsif: sidebar jadi bar atas ── */
+@media (max-width:900px) {
+  #shell { flex-direction:column; }
+  #side { width:auto; flex:none; height:auto; position:static; flex-direction:row; flex-wrap:wrap; align-items:center; padding:10px 12px; }
+  .brand { border:0; margin:0; padding:0 8px 0 0; }
+  .navlbl { display:none; }
+  .navbtn { width:auto; border-left:0; border-bottom:2px solid transparent; border-radius:8px 8px 0 0; padding:8px 10px; }
+  .navbtn.on { border-bottom-color:var(--acc); }
+  #sideFoot { margin:0 0 0 auto; border:0; padding:0; flex-direction:row; }
+  #sideFoot .meta { display:none; }
+  main { padding:16px 14px 50px; }
+  .plist { grid-template-columns:1fr; }
+}
+</style>
+</head>
+<body>
+<div id="shell">
+<aside id="side">
+  <div class="brand">
+    <svg width="34" height="34" viewBox="0 0 34 34" aria-hidden="true"><rect x="2" y="8" width="26" height="20" rx="5" fill="#2b3242"/><rect x="5" y="5" width="26" height="20" rx="5" fill="#f5a524" opacity=".55"/><rect x="8" y="2" width="26" height="20" rx="5" fill="#f5a524"/><circle cx="14" cy="9" r="1.6" fill="#1a1206"/><circle cx="19" cy="9" r="1.6" fill="#1a1206"/><circle cx="24" cy="9" r="1.6" fill="#1a1206"/><rect x="12" y="15" width="18" height="2.4" rx="1.2" fill="#1a1206" opacity=".55"/></svg>
+    <div><b>StealthXGM</b><span>Browser banyak akun &bull; lokal</span></div>
+  </div>
+  <div class="navlbl">Kelola</div>
+  <button class="navbtn on" id="nav-profil" onclick="showView('profil')"><span class="ic">👤</span>Profil<span class="cnt" id="navProfilCount"></span></button>
+  <button class="navbtn" id="nav-cermin" onclick="showView('cermin')"><span class="ic">🪞</span>Cermin</button>
+  <button class="navbtn" id="nav-alur" onclick="showView('alur')"><span class="ic">🔁</span>Alur</button>
+  <button class="navbtn" id="nav-kernel" onclick="showView('kernel')"><span class="ic">⚙️</span>Kernel</button>
+  <button class="navbtn" id="nav-cadangan" onclick="showView('cadangan')"><span class="ic">💾</span>Cadangan</button>
+  <div class="navlbl">Sistem</div>
+  <button class="navbtn" id="nav-ekstensi" onclick="showView('ekstensi')"><span class="ic">🧩</span>Ekstensi</button>
+  <button class="navbtn" id="nav-pool" onclick="showView('pool')"><span class="ic">🌐</span>Pool Proxy</button>
+  <button class="navbtn" id="nav-api" onclick="showView('api')"><span class="ic">🔌</span>API Lokal</button>
+  <button class="navbtn" id="nav-sampah" onclick="showView('sampah')"><span class="ic">🗑</span>Sampah<span class="cnt" id="trashCount"></span></button>
+  <div id="sideFoot">
+    <div class="meta">29 teknik fingerprint &bull; WARP fallback &bull; gratis unlimited</div>
+    <button id="logoutBtn" class="ghost small" onclick="logoutGui()">🚪 Keluar</button>
+  </div>
+</aside>
+<main>
+  <div class="vhead">
+    <h2 id="viewTitle">Profil</h2>
+    <p id="viewSub">Semua profil browser — klik ▶ untuk jalan, ✏️ untuk ubah.</p>
+    <div class="stats" id="statStrip">
+      <div class="stat"><b id="statTotal">–</b><span>Total profil</span></div>
+      <div class="stat"><b id="statRunning" class="run">–</b><span>Sedang jalan</span></div>
+      <div class="stat"><b id="statGroups">–</b><span>Grup</span></div>
+    </div>
+  </div>
+  <div id="storageWarn" class="hidden"></div>
+
+<section id="view-profil" class="view">
+<div class="bar">
+  <input id="search" placeholder="🔍 Cari profil..." style="flex:2;min-width:140px" oninput="loadProfiles()">
+  <select id="groupFilter" style="flex:1;min-width:100px" onchange="loadProfiles()"><option value="">Semua grup</option></select>
+  <button onclick="openEditor()">+ Baru</button>
+  <button class="ghost" onclick="openBatch()">📥 Batch</button>
+  <button class="ghost" onclick="openFpgen()">🎲 Fingerprint</button>
+</div>
+
+<div id="batchBar" class="card hidden" style="border-color:var(--acc)">
+  <div class="row" style="margin-top:0;align-items:center">
+    <span id="selCount" class="meta"><b>0</b> dipilih</span>
+    <button class="small" onclick="selectAll(true)">Pilih semua</button>
+    <button class="ghost small" onclick="selectAll(false)">Batal pilih</button>
+    <button class="danger small" onclick="batchDel()">🗑 Hapus (ke Trash)</button>
+    <button class="ghost small" onclick="batchMoveGroup()">📁 Pindah grup</button>
+    <button class="ghost small" onclick="batchAssignPool()">🌐 Ganti pool</button>
+  </div>
+  <div id="batchAssignRow" class="row hidden" style="margin-top:8px;align-items:center">
+    <select id="batchPoolSel" style="flex:2"></select>
+    <button class="small" onclick="batchDoAssignPool()">Terapkan</button>
+  </div>
+</div>
+<div id="list" class="plist"></div>
+</section>
+
+<section id="view-cermin" class="view hidden">
+<div class="card">
+  <h3>🪞 Cermin <span class="badge amber" id="syncBadge">mati</span></h3>
+  <div class="meta">Satu jendela jadi pemimpin — aksinya dicerminkan ke semua jendela pengikut. (Model 15 rute /sync/*.)</div>
+  <dl class="kv">
+    <dt>Pemimpin</dt><dd id="syncLeader">—</dd>
+    <dt>Pengikut</dt><dd id="syncFollowers">—</dd>
+    <dt>Jeda buka</dt><dd id="syncDelay">—</dd>
+    <dt>Cakupan</dt><dd id="syncRange">—</dd>
+  </dl>
+  <div class="row">
+    <select id="syncLeaderSel" style="flex:2"></select>
+    <select id="syncRangeSel" style="flex:1"><option value="all">Semua yang jalan</option><option value="selected">Yang dipilih</option></select>
+    <button onclick="syncStart()">▶ Mulai Cermin</button>
+    <button class="danger" onclick="syncStop()">⏹ Berhenti</button>
+    <button class="ghost small" onclick="loadSyncStatus()">🔄 Refresh</button>
+  </div>
+  <div id="syncFollowerBox" class="hidden" style="margin-top:8px"><label class="lbl">Pengikut (pilih yang sedang jalan)</label><div id="syncFollowerList"></div></div>
+  <div style="display:flex;gap:8px;margin-top:10px">
+    <div style="flex:2"><label class="lbl">Buka URL di semua jendela</label><input id="syncUrl" placeholder="https://..."></div>
+    <div style="flex:1;align-self:end"><button class="small" onclick="syncOpenUrl()">🌐 Buka</button></div>
+  </div>
+  <div style="display:flex;gap:8px;margin-top:8px">
+    <div style="flex:2"><label class="lbl">Ketik teks di semua jendela</label><input id="syncText" placeholder="teks..."></div>
+    <div style="flex:1;align-self:end"><button class="small" onclick="syncInput()">⌨️ Ketik</button></div>
+  </div>
+  <div class="row" style="margin-top:10px">
+    <button class="ghost small" onclick="syncRefresh()">🔄 Refresh semua tab</button>
+    <select id="syncFlowSel" style="flex:1;min-width:140px"></select>
+    <button class="ghost small" onclick="syncSteps()">▶ Jalankan alur di semua</button>
+  </div>
+  <div id="syncTabs" style="margin-top:10px"></div>
+  <div id="syncLog" class="meta" style="margin-top:8px"></div>
+</div>
+</section>
+
+<section id="view-alur" class="view hidden">
+<div class="card">
+  <h3>🔁 Alur</h3>
+  <div class="meta">Langkah (buka / klik / isi / tunggu) disimpan jadi alur, lalu dijalankan di profil yang sedang jalan.</div>
+  <div class="row"><input id="rpaFlowName" placeholder="Nama alur" style="flex:1"><button onclick="rpaSaveFlow()">💾 Simpan alur</button><button class="ghost" onclick="rpaLoadFlowIntoBuilder()">📂 Muat ke builder</button></div>
+  <div class="row"><select id="rpaTemplateSel" style="flex:2"></select><button class="ghost" onclick="rpaUseTemplate()">📋 Pakai template</button></div>
+  <label class="lbl">Builder langkah (tanpa tulis JSON)</label>
+  <div id="rpaStepList" style="margin-top:6px"></div>
+  <div class="row"><button class="ghost small" onclick="rpaAddStepRow()">＋ Tambah langkah</button><button class="ghost small" onclick="rpaApplyJson()">⬆ Terapkan JSON di bawah</button></div>
+  <label class="lbl">Langkah (JSON — tersinkron dari builder)</label>
+  <textarea id="rpaFlowSteps" rows="4" placeholder='[{"type":"goto","url":"https://example.com"}]'></textarea>
+  <div id="rpaFlowList" style="margin-top:10px"></div>
+</div>
+<div class="card">
+  <h3>● Rekam Alur</h3>
+  <div class="meta">Rekam aksi di browser profil yang sedang jalan, lalu simpan jadi alur. Pilih profil di bagian Cek Sidik, isi nama alur di atas, lalu mulai rekam.</div>
+  <div class="row"><button onclick="rpaRecordStart()">● Mulai rekam</button><button class="ghost" onclick="rpaRecordStop()">⏹ Berhenti &amp; simpan</button></div>
+  <div id="rpaRecordStatus" class="meta" style="margin-top:6px"></div>
+</div>
+<div class="card">
+  <h3>👥 Jalankan di Banyak Profil</h3>
+  <div class="meta">Satu alur dijalankan di tiap profil terpilih (berurutan). Profil yang belum jalan di-launch lalu di-stop lagi.</div>
+  <div class="row"><select id="rpaMultiFlow" style="flex:2"></select><button onclick="rpaMultiRun()">▶ Jalankan di terpilih</button></div>
+  <div id="rpaMultiProfiles" style="margin-top:6px"></div>
+  <div id="rpaMultiJobs" style="margin-top:8px"></div>
+</div>
+<div class="card">
+  <h3>🧪 Cek Sidik Live</h3>
+  <div class="meta">Bandingkan fingerprint yang disuntik dengan yang terbaca langsung dari browser yang sedang jalan.</div>
+  <div class="row"><select id="fpCheckProfile" style="flex:2"></select><button onclick="fpCheckRun()">🧪 Cek sekarang</button></div>
+  <div id="fpCheckOut" style="margin-top:8px"></div>
+</div>
+</section>
+
+<section id="view-kernel" class="view hidden">
+<div class="card">
+  <h3>⚙️ Kernel</h3>
+  <div class="meta">Mesin browser (Chromium) yang dipakai tiap profil. Unduh versi baru dari Chrome for Testing, atau daftarkan binary sendiri. Slot Firefox tersedia untuk binary yang didaftarkan manual.</div>
+  <div id="kernelList" style="margin-top:8px"></div>
+</div>
+<div class="card">
+  <h3>⬇️ Unduh Kernel Baru</h3>
+  <div class="row"><input id="kernelVer" placeholder="versi (kosong = terbaru)" style="flex:2"><button onclick="kernelDownload()">⬇️ Unduh</button><button class="ghost small" onclick="loadKernels()">🔄 Refresh</button></div>
+  <div id="kernelJobs" style="margin-top:8px"></div>
+</div>
+<div class="card">
+  <h3>➕ Daftarkan Binary Manual</h3>
+  <div class="row"><input id="kernelPath" placeholder="/path/ke/chrome atau firefox" style="flex:2"><input id="kernelName" placeholder="nama (opsional)" style="flex:1"><select id="kernelEngine" style="flex:1"><option value="chromium">Chromium</option><option value="firefox">Firefox</option></select><button onclick="kernelRegister()">➕ Daftarkan</button></div>
+</div>
+</section>
+
+<section id="view-cadangan" class="view hidden">
+<div class="card">
+  <h3>💾 Cadangan</h3>
+  <div class="meta">Ekspor profil lengkap (identitas beku, cookie, data browser, cache) ke ZIP — restore jadi profil baru.</div>
+  <div class="row"><select id="backupProfileSel" style="flex:2"></select><label class="flag"><input type="checkbox" id="backupCache" checked> Sertakan cache</label><button onclick="backupCreate()">💾 Buat cadangan</button><button class="ghost small" onclick="loadBackups()">🔄 Refresh</button></div>
+  <div id="backupList" style="margin-top:10px"></div>
+</div>
+</section>
+
+<section id="view-sampah" class="view hidden"><div id="trashSection" class="card">
+  <h3>🗑 Trash Bin <button class="danger small" style="float:right" onclick="emptyTrash()">Kosongkan Trash</button></h3>
+  <div class="meta">Profil terhapus masuk sini. Restore kapan aja — atau hapus permanen. Browser data ikut terhapus permanen.</div>
+  <div id="trashList" style="margin-top:8px"></div>
+</div></section>
+
+<section id="view-pool" class="view hidden"><div id="poolsSection" class="card">
+  <h3>🌐 Proxy Pools <button class="small ghost" style="float:right" onclick="openPoolEditor()">+ Tambah Pool</button></h3>
+  <div class="meta">Tambah pool proxy dari mana aja — DataImpulse, beli proxy, VPS sendiri, dll.</div>
+  <div id="poolList"></div>
+  <div id="poolEditor" class="hidden" style="margin-top:10px;border-top:1px solid var(--border);padding-top:10px">
+    <h4 id="poolEdTitle">Pool Baru</h4>
+    <input type="hidden" id="poolEdId">
+    <label class="lbl">Nama</label><input id="poolEdName" placeholder="cth: Proxy ID Murah">
+    <div style="display:flex;gap:8px">
+      <div style="flex:1"><label class="lbl">Tipe</label>
+        <select id="poolEdType"><option value="http">HTTP</option><option value="socks5">SOCKS5</option><option value="sticky">Sticky (proxy-bot)</option><option value="warp">WARP</option><option value="none">Direct</option></select>
+      </div>
+      <div style="flex:1"><label class="lbl">Negara</label><input id="poolEdCountry" placeholder="ID / SG / auto"></div>
+    </div>
+    <div style="display:flex;gap:8px">
+      <div style="flex:2"><label class="lbl">Host</label><input id="poolEdHost" placeholder="127.0.0.1"></div>
+      <div style="flex:1"><label class="lbl">Port</label><input id="poolEdPort" placeholder="8080"></div>
+    </div>
+    <div style="display:flex;gap:8px">
+      <div style="flex:1"><label class="lbl">Username</label><input id="poolEdUser" placeholder="opsional"></div>
+      <div style="flex:1"><label class="lbl">Password</label><input id="poolEdPass" type="password" placeholder="opsional"></div>
+    </div>
+    <label class="lbl">Catatan</label><input id="poolEdNotes" placeholder="opsional">
+    <div class="row">
+      <label class="flag"><input type="checkbox" id="poolEdActive" checked> Aktif</label>
+      <label class="flag"><input type="checkbox" id="poolEdDefault"> Default untuk profil baru</label>
+    </div>
+    <div class="row" style="margin-top:10px">
+      <button onclick="savePool()">💾 Simpan Pool</button>
+      <button class="ghost" onclick="closePoolEditor()">Batal</button>
+    </div>
+  </div>
+</div></section>
+
+<section id="view-ekstensi" class="view hidden"><div id="extSection" class="card">
+  <h3>🧩 Extension Library</h3>
+  <div class="meta">Upload .crx / .zip, atau pasang dari Chrome Web Store URL. Terus assign ke profil.</div>
+  <div class="row" style="margin-bottom:8px">
+    <input type="file" id="extFile" accept=".crx,.zip" style="flex:2">
+    <button class="small" onclick="uploadExt()">⬆️ Upload</button>
+  </div>
+  <div class="row" style="margin-bottom:8px">
+    <input id="extCws" placeholder="Chrome Web Store URL / ID (32 char)" style="flex:2">
+    <button class="small" onclick="addCws()">🌐 Dari Web Store</button>
+  </div>
+  <div id="extMsg" class="meta"></div>
+  <div id="extList" style="margin-top:8px"></div>
+</div></section>
+
+<section id="view-api" class="view hidden"><div id="apiSection" class="card">
+  <h3>🔌 Local API <span id="apiStatusBadge" class="badge"></span></h3>
+  <div class="meta">Kontrol browser dari cmd / termux / script. Kompatibel AdsPower Local API.</div>
+  <div class="row" style="margin-top:8px;align-items:center">
+    <button id="apiToggleBtn" class="small" onclick="apiToggle()">⏳ ...</button>
+    <button class="ghost small" onclick="loadApiSettings()">🔄 Refresh</button>
+    <span id="apiStatusText" class="meta"></span>
+  </div>
+  <div style="display:flex;gap:8px;margin-top:8px">
+    <div style="flex:1"><label class="lbl">Port</label><input id="apiPort" type="number" min="1024" max="65535" value="50325"></div>
+    <div style="flex:2"><label class="lbl">API Key (opsional)</label><input id="apiKey" type="password" placeholder="kosong = tanpa auth"></div>
+  </div>
+  <div class="row" style="margin-top:8px">
+    <label class="flag"><input type="checkbox" id="apiEnabled" checked> Auto-start bareng GUI</label>
+  </div>
+  <div class="row" style="margin-top:8px">
+    <button class="small" onclick="saveApiSettings()">💾 Simpan</button>
+    <button class="ghost small" onclick="genApiKey()">🎲 Generate Key</button>
+    <button class="ghost small" onclick="clearApiKey()">Hapus Key</button>
+  </div>
+  <div id="apiMsg" class="meta" style="margin-top:6px"></div>
+  <h4 style="margin-top:12px">Contoh curl <button class="ghost small" onclick="copyCurl()">📋 Copy</button></h4>
+  <pre id="curlExamples" style="white-space:pre-wrap;font-size:12px;background:var(--bg);padding:10px;border-radius:8px;overflow-x:auto"></pre>
+  <h4 style="margin-top:8px">CLI (termux / cmd)</h4>
+  <pre id="cliExamples" style="white-space:pre-wrap;font-size:12px;background:var(--bg);padding:10px;border-radius:8px;overflow-x:auto"></pre>
+</div></section>
+
+<section id="view-editor" class="view hidden"><div id="editor" class="card">
+  <h3 id="edTitle">Profil Baru</h3>
+  <input type="hidden" id="edId">
+  <label class="lbl">Nama</label><input id="edName" placeholder="cth: Tokopedia Akun 1">
+  <div id="quickBox">
+    <div class="row" style="margin-top:10px">
+      <button onclick="quickCreate()">✨ Buat Otomatis</button>
+      <button class="ghost" onclick="toggleAdvanced()">⚙️ Advanced (opsional) ▾</button>
+      <button class="ghost" onclick="closeEditor()">Batal</button>
+    </div>
+    <div class="meta" style="margin-top:6px">Otomatis: OS acak yang ngotak • pool default • Asia/Jakarta • semua teknik ON • WARP fallback</div>
+  </div>
+  <div id="advancedBox" class="hidden">
+  <div style="display:flex;gap:8px">
+    <div style="flex:1"><label class="lbl">Grup</label><input id="edGroup" placeholder="default" list="groups"></div>
+    <div style="flex:1"><label class="lbl">Platform</label>
+      <select id="edPlatform"><option value="windows">Windows</option><option value="macos">macOS</option><option value="linux">Linux</option><option value="android">Android</option></select>
+    </div>
+  </div>
+  <div style="display:flex;gap:8px">
+    <div style="flex:1"><label class="lbl">Timezone</label>
+      <select id="edTz"><option>Asia/Jakarta</option><option>Asia/Singapore</option><option>Asia/Kuala_Lumpur</option><option>America/New_York</option><option>Europe/London</option><option>Australia/Sydney</option></select>
+    </div>
+    <div style="flex:1"><label class="lbl">Proxy Pool</label>
+      <select id="edPool"><option value="">-- pilih pool --</option></select>
+      <div class="meta" id="poolHint" style="margin-top:4px"></div>
+    </div>
+  </div>
+  <div class="row" style="margin-top:4px">
+    <button type="button" class="ghost small" onclick="toggleManualProxy()">⚙️ Proxy manual (tanpa pool)</button>
+  </div>
+  <div id="proxyLegacy" class="hidden">
+    <div style="display:flex;gap:8px">
+      <div style="flex:1"><label class="lbl">Tipe</label>
+        <select id="edProxy"><option value="sticky">Sticky (auto)</option><option value="warp">WARP</option><option value="http">HTTP manual</option><option value="socks5">SOCKS5 manual</option><option value="none">Tanpa proxy</option></select>
+      </div>
+      <div style="flex:1"><label class="lbl">Host:Port</label><input id="edProxyHost" placeholder="127.0.0.1:8080"></div>
+    </div>
+  </div>
+  <label class="lbl">Catatan</label><textarea id="edNotes" rows="2" placeholder="opsional"></textarea>
+
+  <div class="adv">
+    <div class="row" style="margin-top:6px">
+      <label class="flag"><input type="checkbox" id="edWarp" checked> WARP Fallback</label>
+      <label class="flag"><input type="checkbox" id="edMobile"> Mode Mobile</label>
+    </div>
+  </div>
+
+  <label class="lbl">🧩 Extensions</label>
+  <div id="edExtList" class="meta" style="margin-bottom:8px">—</div>
+
+  <label class="lbl">Fingerprint Techniques <span id="flagCount"></span></label>
+  <div class="row" style="margin-bottom:6px">
+    <button class="ghost small" onclick="toggleAllFlags(true)">Semua ON</button>
+    <button class="ghost small" onclick="toggleAllFlags(false)">Semua OFF</button>
+    <button class="ghost small" onclick="previewFp()">👁 Preview</button>
+  </div>
+  <div id="flags"></div>
+  <div id="previewOut" class="meta"></div>
+
+  <div class="row" style="margin-top:14px">
+    <button onclick="saveProfile()">💾 Simpan</button>
+    <button class="ghost" onclick="closeEditor()">Batal</button>
+  </div>
+  </div><!-- /advancedBox -->
+</div>
+</section>
+
+<datalist id="groups"></datalist>
+<div id="toast"></div>
+<div id="dlgOverlay" class="hidden" style="position:fixed;top:0;left:0;right:0;bottom:0;background:rgba(0,0,0,.55);z-index:99" onclick="closeDialog()"></div>
+<div id="dlgModal" class="card hidden" style="position:fixed;top:28%;left:8%;right:8%;max-width:420px;margin:0 auto;z-index:100;box-shadow:0 8px 40px rgba(0,0,0,.6)">
+  <h3 id="dlgTitle">⚠️</h3>
+  <div id="dlgMsg" class="meta" style="margin:10px 0;white-space:pre-wrap"></div>
+  <div class="row"><button onclick="closeDialog()">Tutup</button></div>
+</div>
+
+<!-- Batch Import modal -->
+<div id="batchModal" class="card hidden" style="position:fixed;top:5%;left:5%;right:5%;max-width:640px;margin:0 auto;z-index:50;max-height:90%;overflow:auto;box-shadow:0 8px 40px rgba(0,0,0,.6)">
+  <h3>📥 Batch Import Profil</h3>
+  <div class="meta">Import banyak profil sekaligus dari CSV/JSON. <a href="/api/profiles/template/csv" style="color:var(--acc)">Template CSV</a> • <a href="/api/profiles/template/json" style="color:var(--acc)">Template JSON</a></div>
+  <div class="meta">Kolom CSV: <b>name</b> (wajib), group, pool (nama pool), platform (windows|macos|linux|android), timezone, notes, warp_fallback, mobile (true/false)</div>
+  <label class="lbl">File (.csv / .json)</label>
+  <input type="file" id="batchFile" accept=".csv,.json">
+  <div id="batchPreview" style="margin-top:10px"></div>
+  <div id="batchResult" class="meta" style="margin-top:8px"></div>
+  <h4 style="margin-top:14px">📋 Job Batch</h4>
+  <div class="meta">Impor/ekspor async — ada progress + bisa dibatalkan.</div>
+  <div class="row"><button class="ghost small" onclick="loadBatchJobs()">🔄 Refresh job</button><button class="ghost small" onclick="batchExport()">⬆️ Ekspor semua (CSV)</button></div>
+  <div id="batchJobsList" style="margin-top:8px"></div>
+  <div class="row" style="margin-top:10px">
+    <button onclick="previewBatch()">👁 Preview</button>
+    <button id="batchGoBtn" class="hidden" onclick="doBatchImport()">⬇ Import Sekarang</button>
+    <button class="ghost" onclick="closeBatch()">Tutup</button>
+  </div>
+</div>
+
+<!-- Fingerprint Generator modal -->
+<div id="fpgenModal" class="card hidden" style="position:fixed;top:3%;left:5%;right:5%;max-width:680px;margin:0 auto;z-index:50;max-height:94%;overflow:auto;box-shadow:0 8px 40px rgba(0,0,0,.6)">
+  <h3>🎲 Fingerprint Generator</h3>
+  <div class="meta">Random yang <b>ngotak</b> (konsisten per OS) atau manual per-field dengan validasi.</div>
+  <div class="row" id="fpgenOsRow" style="margin-top:8px">
+    <button class="ghost fpOs" data-os="windows" onclick="fpgenSetOs('windows')">🪟 Windows</button>
+    <button class="ghost fpOs" data-os="macos" onclick="fpgenSetOs('macos')">🍎 macOS</button>
+    <button class="ghost fpOs" data-os="linux" onclick="fpgenSetOs('linux')">🐧 Linux</button>
+    <button class="ghost fpOs" data-os="android" onclick="fpgenSetOs('android')">🤖 Android</button>
+    <button class="ghost fpOs" data-os="ios" onclick="fpgenSetOs('ios')">📱 iOS</button>
+  </div>
+  <div class="row" style="margin-top:6px">
+    <button id="fpgenTabR" onclick="fpgenSetMode('random')">🎲 Random</button>
+    <button id="fpgenTabM" class="ghost" onclick="fpgenSetMode('manual')">✋ Manual</button>
+  </div>
+  <div id="fpgenRandom">
+    <div class="row" style="margin-top:8px">
+      <div style="flex:1"><label class="lbl">Timezone</label><select id="fpgenTz"></select></div>
+      <div style="flex:1" id="fpgenChromeWrap"><label class="lbl">Chrome versi</label><select id="fpgenChrome"><option value="">Acak</option></select></div>
+      <div style="flex:1" id="fpgenCountryWrap" class="hidden"><label class="lbl">Negara (mobile)</label><select id="fpgenCountry"></select></div>
+    </div>
+    <div class="row" style="margin-top:8px"><button onclick="fpgenGenerate()">🎲 Generate</button></div>
+  </div>
+  <div id="fpgenManual" class="hidden">
+    <div class="row" style="margin-top:8px">
+      <div style="flex:1"><label class="lbl">Chrome versi</label><select id="fpgenMChrome"></select></div>
+      <div style="flex:1"><label class="lbl">GPU</label><select id="fpgenMGpu"></select></div>
+    </div>
+    <div class="row" style="margin-top:8px">
+      <div style="flex:1"><label class="lbl">Layar</label><select id="fpgenMScreen"></select></div>
+      <div style="flex:1"><label class="lbl">CPU core</label><select id="fpgenMCores"></select></div>
+      <div style="flex:1"><label class="lbl">RAM (GB)</label><select id="fpgenMMem"></select></div>
+    </div>
+    <div class="row" style="margin-top:8px">
+      <div style="flex:1"><label class="lbl">Timezone</label><select id="fpgenMTz"></select></div>
+      <div style="flex:1"><label class="lbl">Locale</label><select id="fpgenMLocale"><option value="">Auto dari timezone</option></select></div>
+    </div>
+    <div class="row" style="margin-top:8px"><button onclick="fpgenManualBuild()">👁 Preview Manual</button></div>
+  </div>
+  <div id="fpgenWarn" class="meta" style="margin-top:8px;color:#f0a020"></div>
+  <div id="fpgenPreview" class="meta" style="margin-top:8px"></div>
+  <div class="row" style="margin-top:10px">
+    <div style="flex:1"><label class="lbl">Profil target</label><select id="fpgenProfile"></select></div>
+  </div>
+  <div class="row" style="margin-top:8px">
+    <button onclick="fpgenTest()">🧪 Test di browser</button>
+    <button onclick="fpgenSave()">💾 Simpan ke profil</button>
+    <button class="ghost" onclick="fpgenCopy()">📋 Copy JSON</button>
+    <button class="ghost" onclick="closeFpgen()">Tutup</button>
+  </div>
+  <div id="fpgenResult" class="meta" style="margin-top:8px"></div>
+</div>
+
+</main>
+</div><!-- /shell -->
+
+<script>
+const API = '';
+let FLAGS = {};
+
+async function jget(u){ const r = await fetch(API+u); return r.json(); }
+async function jpost(u,d,m='POST'){ const r = await fetch(API+u,{method:m,headers:{'Content-Type':'application/json'},body:JSON.stringify(d)}); return r.json(); }
+function toast(m){ const t=document.getElementById('toast'); t.textContent=m; t.style.display='block'; setTimeout(()=>t.style.display='none',3500); }
+function dialog(msg, title){
+  document.getElementById('dlgTitle').textContent = title || '⚠️ Perhatian';
+  document.getElementById('dlgMsg').textContent = msg;
+  document.getElementById('dlgModal').classList.remove('hidden');
+  document.getElementById('dlgOverlay').classList.remove('hidden');
+}
+function closeDialog(){
+  document.getElementById('dlgModal').classList.add('hidden');
+  document.getElementById('dlgOverlay').classList.add('hidden');
+}
+
+async function init(){
+  const f = await jget('/api/flags');
+  FLAGS = f.categories;
+  renderFlags();
+  await loadPools();
+  loadProfiles();
+  checkStorageHealth();
+  const h = (location.hash||'').replace('#','');
+  showView(VIEWS[h] ? h : 'profil');
+  loadSyncStatus(); loadKernels(); loadBackups(); loadRpaFlows(); loadBatchJobs();
+  checkAuthStatus();
+}
+async function checkStorageHealth(){
+  try{
+    const d = await jget('/api/system/storage-health');
+    if(d.quarantined && d.quarantined.length){
+      const el = document.getElementById('storageWarn');
+      el.textContent = '⚠️ Data rusak pernah diperbaiki otomatis — file lama dikarantina: ' + d.quarantined.join(', ') + ' (cek folder gui/data, bisa dipulihkan manual).';
+      el.classList.remove('hidden');
+    }
+  }catch(e){}
+}
+async function loadProfiles(){
+  const s = document.getElementById('search').value;
+  const g = document.getElementById('groupFilter').value;
+  const [d, pd] = await Promise.all([
+    jget(`/api/profiles?search=${encodeURIComponent(s)}${g?'&group='+encodeURIComponent(g):''}`),
+    jget('/api/pools'),
+  ]);
+  const poolName = {};
+  (pd.pools||[]).forEach(p=>poolName[p.id]=p.name);
+  const pname = p => {
+    const px = p.proxy||{};
+    if(px.pool_id && poolName[px.pool_id]) return '🌐 '+poolName[px.pool_id];
+    if(px.type && px.type!=='none') return '🌐 '+(px.host?`${px.type} ${px.host}`:px.type);
+    return '';
+  };
+  const list = document.getElementById('list');
+  list.innerHTML = d.profiles.map(p=>{
+    const plat = (p.fingerprint&&p.fingerprint.platform)||'windows';
+    const ini = esc((p.name||'?').trim().slice(0,2).toUpperCase());
+    return `
+    <div class="card">
+      <div class="pcard-top">
+        <div class="avatar av-${plat}">${ini}</div>
+        <h3><input type="checkbox" class="selP" value="${p.id}" onchange="updateBatchBar()" style="width:auto;margin-right:6px"> ${esc(p.name)}</h3>
+        <span class="badge ${p.status}">${p.status}</span>
+      </div>
+      <div class="chips"><span class="chip">📁 ${esc(p.group||'default')}</span><span class="chip">🔧 ${countOn(p)} teknik</span><span class="chip">${esc(plat)}</span>${pname(p)?`<span class="chip">${esc(pname(p))}</span>`:''}${p.warp_fallback?'<span class="chip">🌐 WARP</span>':''}${(p.tags||[]).map(t=>`<span class="chip">#${esc(t)}</span>`).join('')}</div>
+      <div class="row pcard-actions">
+        ${p.status==='running'
+          ? `<button class="danger small" onclick="stopP('${p.id}')">⏹ Stop</button>`
+          : `<button class="small" onclick="launchP('${p.id}', this)">▶ Launch</button>`}
+        <button class="ghost small" onclick="openEditor('${p.id}')">✏️ Edit</button>
+        <button class="ghost small" onclick="dupP('${p.id}')">⧉ Duplikat</button>
+        <button class="ghost small" onclick="exportCookies('${p.id}')">🍪 Cookie</button>
+        ${p.status==='running'?`<button class="ghost small" onclick="fpCheck('${p.id}')">🧪 Cek sidik</button>`:''}
+        <button class="ghost small" onclick="backupP('${p.id}')">💾 Cadangkan</button>
+        <button class="danger small" onclick="delP('${p.id}')">🗑</button>
+      </div>
+    </div>`;}).join('') || '<div class="card">Belum ada profil. Klik "+ Baru".</div>';
+  // strip statistik header
+  document.getElementById('statTotal').textContent = d.profiles.length;
+  document.getElementById('statRunning').textContent = d.profiles.filter(p=>p.status==='running').length;
+  document.getElementById('navProfilCount').textContent = d.profiles.length || '';
+  // groups
+  const gd = await jget('/api/groups');
+  const gf = document.getElementById('groupFilter');
+  const cur = gf.value;
+  gf.innerHTML = '<option value="">Semua grup</option>' + gd.groups.map(x=>`<option value="${esc(x.name)}">${esc(x.name)} (${x.count})</option>`).join('');
+  gf.value = cur;
+  document.getElementById('groups').innerHTML = gd.groups.map(x=>`<option value="${esc(x.name)}">`).join('');
+  document.getElementById('statGroups').textContent = gd.groups.length;
+  updateBatchBar();  // reset batch bar on reload
+  loadTrashCount();
+}
+function esc(s){ return String(s||'').replace(/[&<>"]/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c])); }
+function countOn(p){ return Object.values(p.fingerprint?.features||{}).filter(Boolean).length; }
+
+function renderFlags(){
+  const el = document.getElementById('flags');
+  el.innerHTML = Object.entries(FLAGS).map(([cat,flags])=>`
+    <div class="flag-cat"><h4>${cat.replace('_',' ')}</h4><div class="flag-grid">
+    ${flags.map(f=>`<label class="flag"><input type="checkbox" data-flag="${f.id}" checked> ${f.label}</label>`).join('')}
+    </div></div>`).join('');
+  updateFlagCount();
+}
+function toggleAllFlags(on){ document.querySelectorAll('[data-flag]').forEach(c=>c.checked=on); updateFlagCount(); }
+function updateFlagCount(){ const n=document.querySelectorAll('[data-flag]:checked').length; document.getElementById('flagCount').textContent=`(${n} aktif)`; }
+document.addEventListener('change',e=>{ if(e.target.matches('[data-flag]')) updateFlagCount(); });
+let MANUAL_PROXY = false;
+let POOLS = [];
+async function loadPools(){
+  const d = await jget('/api/pools');
+  POOLS = d.pools || [];
+  const sel = document.getElementById('edPool');
+  const cur = sel.value;
+  sel.innerHTML = '<option value="">-- pilih pool --</option>' + POOLS.filter(p=>p.active).map(p=>
+    `<option value="${p.id}">${esc(p.name)} [${p.type}]${p.is_default?' ⭐':''}</option>`).join('');
+  if(cur) sel.value = cur;
+  // default pool for new profiles
+  const def = POOLS.find(p=>p.is_default && p.active);
+  if(def && !document.getElementById('edId').value) sel.value = def.id;
+  updatePoolHint();
+}
+function updatePoolHint(){
+  const pid = document.getElementById('edPool').value;
+  const p = POOLS.find(x=>x.id===pid);
+  document.getElementById('poolHint').textContent = p
+    ? `${p.type.toUpperCase()}${p.host?` • ${p.host}:${p.port}`:''}${p.country?` • ${p.country}`:''}${p.last_check&&p.last_check.status==='online'?` • ✅ ${p.last_check.ip} (${p.last_check.latency_ms}ms)`:''}`
+    : '';
+}
+document.addEventListener('change',e=>{ if(e.target.id==='edPool') updatePoolHint(); });
+function toggleManualProxy(){
+  MANUAL_PROXY = !MANUAL_PROXY;
+  document.getElementById('proxyLegacy').classList.toggle('hidden', !MANUAL_PROXY);
+  document.getElementById('edPool').disabled = MANUAL_PROXY;
+}
+
+/* ── Pool section ── */
+function togglePools(){ showView('pool'); }
+async function loadPoolList(){
+  const d = await jget('/api/pools');
+  const el = document.getElementById('poolList');
+  el.innerHTML = (d.pools||[]).map(p=>{
+    const lc = p.last_check;
+    const st = lc ? (lc.status==='online'?`✅ ${esc(lc.ip)} ${esc(lc.country||'')} ${lc.latency_ms}ms` : `❌ ${esc(lc.error||lc.status)}`) : 'belum dites';
+    return `<div class="card" style="margin-bottom:8px">
+      <h3>${esc(p.name)} ${p.is_default?'<span class="badge">⭐ default</span>':''} ${p.system?'<span class="badge">built-in</span>':''} ${p.active?'':'<span class="badge">off</span>'}</h3>
+      <div class="meta"><span>${p.type.toUpperCase()}</span>${p.host?`<span>${esc(p.host)}:${esc(p.port)}</span>`:''}${p.country?`<span>🌍 ${esc(p.country)}</span>`:''}<span>📡 ${st}</span></div>
+      <div class="row">
+        <button class="small" onclick="testPool('${p.id}')">🔌 Test</button>
+        <button class="ghost small" onclick="openPoolEditor('${p.id}')">✏️</button>
+        ${p.system?'':`<button class="danger small" onclick="delPool('${p.id}')">🗑</button>`}
+      </div>
+    </div>`;
+  }).join('') || '<div class="meta">Belum ada pool.</div>';
+}
+function openPoolEditor(pid){
+  document.getElementById('poolEditor').classList.remove('hidden');
+  const f = id=>document.getElementById(id);
+  if(!pid){ f('poolEdTitle').textContent='Pool Baru'; f('poolEdId').value='';
+    ['poolEdName','poolEdHost','poolEdPort','poolEdUser','poolEdPass','poolEdCountry','poolEdNotes'].forEach(i=>f(i).value='');
+    f('poolEdType').value='http'; f('poolEdActive').checked=true; f('poolEdDefault').checked=false; return; }
+  jget(`/api/pools/${pid}`).then(d=>{ const p=d.pool; if(!p) return;
+    f('poolEdTitle').textContent='Edit: '+p.name; f('poolEdId').value=p.id;
+    f('poolEdName').value=p.name; f('poolEdType').value=p.type; f('poolEdHost').value=p.host||'';
+    f('poolEdPort').value=p.port||''; f('poolEdUser').value=p.user||''; f('poolEdPass').value=p.pass||'';
+    f('poolEdCountry').value=p.country||''; f('poolEdNotes').value=p.notes||'';
+    f('poolEdActive').checked=!!p.active; f('poolEdDefault').checked=!!p.is_default;
+  });
+}
+function closePoolEditor(){ document.getElementById('poolEditor').classList.add('hidden'); }
+async function savePool(){
+  const f = id=>document.getElementById(id).value;
+  const data = { name:f('poolEdName')||'Unnamed Pool', type:f('poolEdType'), host:f('poolEdHost'),
+    port:f('poolEdPort'), user:f('poolEdUser'), pass:f('poolEdPass'), country:f('poolEdCountry'),
+    notes:f('poolEdNotes'), active:document.getElementById('poolEdActive').checked,
+    is_default:document.getElementById('poolEdDefault').checked };
+  const pid = f('poolEdId');
+  const r = pid ? await jpost(`/api/pools/${pid}`, data, 'PUT') : await jpost('/api/pools', data);
+  if(r.pool){ toast('✅ Pool tersimpan'); closePoolEditor(); loadPoolList(); loadPools(); }
+  else toast('❌ '+(r.error||'gagal'));
+}
+async function delPool(pid){ if(!confirm('Hapus pool?')) return;
+  const r = await fetch(API+`/api/pools/${pid}`,{method:'DELETE'}).then(x=>x.json());
+  toast(r.ok?'🗑 Dihapus':'❌ '+(r.error||'gagal')); loadPoolList(); loadPools(); }
+async function testPool(pid){ toast('🔌 Testing...'); const r = await jpost(`/api/pools/${pid}/test`,{});
+  const t = r.result||{}; toast(t.status==='online'?`✅ ${t.ip} (${t.latency_ms}ms)`:`❌ ${t.error||t.status}`); loadPoolList(); loadPools(); }
+
+/* ── Extensions ── */
+let EXT_LIB = [];
+function toggleExts(){ showView('ekstensi'); }
+async function loadExtList(){
+  const d = await jget('/api/extensions');
+  EXT_LIB = d.extensions || [];
+  document.getElementById('extList').innerHTML = EXT_LIB.map(e=>
+    `<div class="card" style="margin-bottom:8px">
+      <h3>${esc(e.name)} <span class="badge">v${esc(e.version)}</span> <span class="badge">${esc(e.source)}</span> <span class="badge">MV${e.manifest_version}</span></h3>
+      ${e.description?`<div class="meta">${esc(e.description)}</div>`:''}
+      ${((e.permissions||[]).length || (e.host_permissions||[]).length)?`<div class="meta">🔑 Izin: ${esc((e.permissions||[]).join(', '))}${(e.host_permissions||[]).length?' • 🌐 '+esc(e.host_permissions.join(', ')):''}</div>`:''}
+      <div class="row"><button class="danger small" onclick="delExt('${e.id}')">🗑 Hapus</button></div>
+    </div>`).join('') || '<div class="meta">Library kosong — upload .crx/.zip atau tambah dari Web Store.</div>';
+}
+async function uploadExt(){
+  const inp = document.getElementById('extFile');
+  if(!inp.files.length){ toast('❌ pilih file .crx/.zip dulu'); return; }
+  const fd = new FormData(); fd.append('file', inp.files[0]);
+  document.getElementById('extMsg').textContent = '⏳ Uploading...';
+  const r = await fetch(API+'/api/extensions',{method:'POST',body:fd}).then(x=>x.json());
+  const perms = r.ok ? [...(r.extension.permissions||[]), ...(r.extension.host_permissions||[])].join(', ') : '';
+  document.getElementById('extMsg').textContent = r.ok ? `✅ ${r.extension.name} v${r.extension.version}${perms ? ' — izin: '+perms : ''}` : `❌ ${r.error||'gagal'}`;
+  if(r.ok){ inp.value=''; loadExtList(); }
+}
+async function addCws(){
+  const v = document.getElementById('extCws').value.trim();
+  if(!v){ toast('❌ isi URL/ID Web Store dulu'); return; }
+  document.getElementById('extMsg').textContent = '⏳ Download dari Web Store...';
+  const r = await jpost('/api/extensions',{cws_url:v});
+  const perms = r.ok ? [...(r.extension.permissions||[]), ...(r.extension.host_permissions||[])].join(', ') : '';
+  document.getElementById('extMsg').textContent = r.ok ? `✅ ${r.extension.name} v${r.extension.version}${perms ? ' — izin: '+perms : ''}` : `❌ ${r.error||'gagal'}`;
+  if(r.ok){ document.getElementById('extCws').value=''; loadExtList(); }
+}
+async function delExt(eid){
+  if(!confirm('Hapus extension dari library? (assignment di semua profil ikut terhapus)')) return;
+  const r = await fetch(API+`/api/extensions/${eid}`,{method:'DELETE'}).then(x=>x.json());
+  toast(r.ok?'🗑 Dihapus':'❌ '+(r.error||'gagal')); loadExtList();
+}
+async function loadEditorExtensions(pid){
+  const el = document.getElementById('edExtList');
+  const lib = (await jget('/api/extensions')).extensions || [];
+  if(!pid){ el.innerHTML = '<span class="meta">Simpan profil dulu, baru bisa assign extension.</span>'; return; }
+  const asg = (await jget(`/api/profiles/${pid}/extensions`)).extensions || [];
+  const am = {}; asg.forEach(a=>am[a.id]=a.enabled);
+  el.innerHTML = lib.map(e=>{
+    const on = e.id in am, en = !!am[e.id];
+    return `<label class="flag" style="display:flex;gap:6px;align-items:center;margin:3px 0">
+      <input type="checkbox" ${on?'checked':''} onchange="toggleExtAssign('${pid}','${e.id}',this.checked)">
+      <span>${esc(e.name)} <span class="meta">v${esc(e.version)}</span></span>
+      ${on?`<button type="button" class="small ${en?'':'ghost'}" onclick="toggleExtEnabled('${pid}','${e.id}',${!en})">${en?'🟢 ON':'⚪ OFF'}</button>`:''}
+    </label>`;
+  }).join('') || '<span class="meta">Library kosong — tambah di section 🧩 Extensions.</span>';
+}
+async function toggleExtAssign(pid, eid, checked){
+  let r;
+  if(checked) r = await jpost(`/api/profiles/${pid}/extensions`,{ext_id:eid});
+  else r = await fetch(API+`/api/profiles/${pid}/extensions/${eid}`,{method:'DELETE'}).then(x=>x.json());
+  if(!r.ok) toast('❌ '+(r.error||'gagal'));
+  loadEditorExtensions(pid);
+}
+async function toggleExtEnabled(pid, eid, enabled){
+  const r = await fetch(API+`/api/profiles/${pid}/extensions/${eid}`,{method:'PUT',headers:{'Content-Type':'application/json'},body:JSON.stringify({enabled})}).then(x=>x.json());
+  if(!r.ok) toast('❌ '+(r.error||'gagal'));
+  loadEditorExtensions(pid);
+}
+
+function toggleAdvanced(){
+  document.getElementById('advancedBox').classList.toggle('hidden');
+}
+async function quickCreate(){
+  const nameEl = document.getElementById('edName');
+  const name = nameEl.value.trim() || 'Profil ' + new Date().toLocaleString('id-ID',{day:'2-digit',month:'2-digit',hour:'2-digit',minute:'2-digit'});
+  const oss = ['windows','windows','windows','macos','linux'];
+  const os = oss[Math.floor(Math.random()*oss.length)];
+  const def = POOLS.find(p=>p.is_default && p.active);
+  const data = {
+    name: name,
+    fingerprint: { platform: os, timezone: 'Asia/Jakarta', mobile: false },
+    warp_fallback: true,
+  };
+  if(def) data.proxy = { pool_id: def.id };
+  const r = await jpost('/api/profiles', data);
+  if(r.profile){ toast('✅ Profil "'+r.profile.name+'" dibuat'); closeEditor(); loadProfiles(); }
+  else dialog('❌ Gagal buat profil: '+(r.error||'unknown'), 'Gagal');
+}
+async function openEditor(pid){
+  showView('editor');
+  window.scrollTo(0,0);
+  await loadPools();
+  MANUAL_PROXY = false;
+  document.getElementById('proxyLegacy').classList.add('hidden');
+  document.getElementById('edPool').disabled = false;
+  const quickBox = document.getElementById('quickBox');
+  const advBox = document.getElementById('advancedBox');
+  if(!pid){ document.getElementById('edTitle').textContent='Profil Baru'; document.getElementById('edId').value='';
+    ['edName','edGroup','edNotes','edProxyHost'].forEach(id=>document.getElementById(id).value='');
+    toggleAllFlags(true); document.getElementById('edWarp').checked=true; document.getElementById('edMobile').checked=false;
+    const def = POOLS.find(p=>p.is_default && p.active);
+    if(def) document.getElementById('edPool').value = def.id;
+    updatePoolHint();
+    loadEditorExtensions('');
+    quickBox.classList.remove('hidden');
+    advBox.classList.add('hidden');
+    return; }
+  quickBox.classList.add('hidden');
+  advBox.classList.remove('hidden');
+  const d = await jget(`/api/profiles/${pid}`);
+  const p = d.profile;
+  document.getElementById('edTitle').textContent='Edit: '+p.name;
+  document.getElementById('edId').value=p.id;
+  document.getElementById('edName').value=p.name;
+  document.getElementById('edGroup').value=p.group||'';
+  document.getElementById('edNotes').value=p.notes||'';
+  document.getElementById('edPlatform').value=p.fingerprint.platform||'windows';
+  document.getElementById('edTz').value=p.fingerprint.timezone||'Asia/Jakarta';
+  // pool or legacy proxy
+  const poolId = p.proxy && p.proxy.pool_id;
+  if(poolId && POOLS.some(x=>x.id===poolId)){
+    document.getElementById('edPool').value = poolId;
+  } else {
+    document.getElementById('edPool').value = '';
+    if(p.proxy && (p.proxy.type||'none')!=='none'){
+      MANUAL_PROXY = true;
+      document.getElementById('proxyLegacy').classList.remove('hidden');
+      document.getElementById('edPool').disabled = true;
+      document.getElementById('edProxy').value=p.proxy.type||'sticky';
+      const h = p.proxy.host||'';
+      document.getElementById('edProxyHost').value = h ? `${h}:${p.proxy.port||''}` : '';
+    }
+  }
+  updatePoolHint();
+  document.getElementById('edWarp').checked=!!p.warp_fallback;
+  document.getElementById('edMobile').checked=!!p.fingerprint.mobile;
+  const feats = p.fingerprint.features||{};
+  document.querySelectorAll('[data-flag]').forEach(c=>{ c.checked = feats[c.dataset.flag]!==false; });
+  updateFlagCount();
+  loadEditorExtensions(pid);
+}
+function closeEditor(){ showView('profil'); }
+function collectFlags(){ const o={}; document.querySelectorAll('[data-flag]').forEach(c=>o[c.dataset.flag]=c.checked); return o; }
+
+async function saveProfile(){
+  const pid = document.getElementById('edId').value;
+  // proxy: pool-based (preferred) or legacy manual
+  let proxy;
+  const poolId = document.getElementById('edPool').value;
+  if(!MANUAL_PROXY && poolId){
+    proxy = { pool_id: poolId };
+  } else {
+    const hp = document.getElementById('edProxyHost').value.split(':');
+    proxy = { type: document.getElementById('edProxy').value,
+              host: hp[0]||'', port: hp[1]||'', pool_id: null };
+  }
+  const data = {
+    name: document.getElementById('edName').value || 'Unnamed',
+    group: document.getElementById('edGroup').value || 'default',
+    notes: document.getElementById('edNotes').value,
+    fingerprint: { features: collectFlags(), timezone: document.getElementById('edTz').value,
+      platform: document.getElementById('edPlatform').value, mobile: document.getElementById('edMobile').checked },
+    proxy: proxy,
+    warp_fallback: document.getElementById('edWarp').checked,
+  };
+  const r = pid ? await jpost(`/api/profiles/${pid}`, data, 'PUT') : await jpost('/api/profiles', data);
+  if(r.profile){ toast('✅ Tersimpan'); closeEditor(); loadProfiles(); } else toast('❌ '+(r.error||'gagal'));
+}
+async function delP(pid){ if(!confirm('Pindah ke trash? (bisa di-restore)')) return; await fetch(API+`/api/profiles/${pid}`,{method:'DELETE'}); toast('🗑 Pindah ke Trash'); loadProfiles(); }
+/* ── Batch Operations ── */
+function selIds(){ return Array.from(document.querySelectorAll('.selP:checked')).map(c=>c.value); }
+function updateBatchBar(){
+  const n = selIds().length;
+  document.getElementById('selCount').innerHTML = `<b>${n}</b> dipilih`;
+  document.getElementById('batchBar').classList.toggle('hidden', n===0);
+}
+function selectAll(on){ document.querySelectorAll('.selP').forEach(c=>c.checked=on); updateBatchBar(); }
+async function batchDel(){
+  const ids = selIds(); if(!ids.length) return;
+  if(!confirm(`Pindahkan ${ids.length} profil ke trash?`)) return;
+  const r = await jpost('/api/profiles/batch',{action:'delete',ids});
+  toast(`🗑 ${(r.trashed||[]).length} ke trash${(r.failed||[]).length?` • ❌ ${r.failed.length} gagal`:''}`);
+  loadProfiles();
+}
+async function batchMoveGroup(){
+  const ids = selIds(); if(!ids.length) return;
+  const g = prompt('Nama grup tujuan:','default');
+  if(g===null) return;
+  const r = await jpost('/api/profiles/batch',{action:'move_group',ids,group:g.trim()||'default'});
+  toast(`📁 ${(r.moved||[]).length} dipindah${(r.failed||[]).length?` • ❌ ${r.failed.length} gagal`:''}`);
+  loadProfiles();
+}
+function batchAssignPool(){
+  const ids = selIds(); if(!ids.length) return;
+  const row = document.getElementById('batchAssignRow');
+  row.classList.toggle('hidden');
+  if(row.classList.contains('hidden')) return;
+  const sel = document.getElementById('batchPoolSel');
+  sel.innerHTML = '<option value="">-- pool default (clear) --</option>' +
+    POOLS.filter(p=>p.active).map(p=>`<option value="${p.id}">${esc(p.name)} [${p.type}]</option>`).join('');
+}
+async function batchDoAssignPool(){
+  const ids = selIds(); if(!ids.length) return;
+  const poolId = document.getElementById('batchPoolSel').value;
+  const r = await jpost('/api/profiles/batch',{action:'assign_pool',ids,pool_id:poolId});
+  toast(`🌐 ${(r.assigned||[]).length} diganti pool${(r.failed||[]).length?` • ❌ ${r.failed.length} gagal`:''}`);
+  document.getElementById('batchAssignRow').classList.add('hidden');
+  loadProfiles();
+}
+/* ── Trash Bin ── */
+function toggleTrash(){ showView('sampah'); }
+async function loadTrash(){
+  const d = await jget('/api/trash');
+  const items = d.trash || [];
+  document.getElementById('trashCount').textContent = items.length ? items.length : '';
+  document.getElementById('trashList').innerHTML = items.map(p=>`
+    <div class="card" style="margin-bottom:8px">
+      <h3>${esc(p.name)} <span class="badge">${esc(p.group||'default')}</span></h3>
+      <div class="meta"><span>🗑 dihapus ${esc((p.deleted_at||'').slice(0,16).replace('T',' '))}</span>${p.notes?`<span>${esc(p.notes.slice(0,60))}</span>`:''}</div>
+      <div class="row">
+        <button class="small" onclick="restoreTrash('${p.id}')">♻️ Restore</button>
+        <button class="danger small" onclick="permDelTrash('${p.id}')">❌ Hapus permanen</button>
+      </div>
+    </div>`).join('') || '<div class="meta">Trash kosong. 🎉</div>';
+}
+async function loadTrashCount(){
+  try{ const d = await jget('/api/trash');
+    document.getElementById('trashCount').textContent = d.count ? d.count : '';
+  }catch(e){}
+}
+async function restoreTrash(pid){
+  const r = await jpost(`/api/trash/${pid}/restore`,{});
+  toast(r.ok?'♻️ Di-restore':'❌ '+(r.error||'gagal'));
+  loadTrash(); loadProfiles();
+}
+async function permDelTrash(pid){
+  if(!confirm('HAPUS PERMANEN? Profil + data browser hilang total. Tidak bisa di-restore!')) return;
+  const r = await fetch(API+`/api/trash/${pid}`,{method:'DELETE'}).then(x=>x.json());
+  toast(r.ok?'❌ Dihapus permanen':'❌ '+(r.error||'gagal'));
+  loadTrash(); loadProfiles();
+}
+async function emptyTrash(){
+  if(!confirm('Kosongkan SELURUH trash? Semua dihapus permanen!')) return;
+  const r = await jpost('/api/trash/empty',{});
+  toast(`❌ ${r.deleted||0} dihapus permanen`);
+  loadTrash(); loadProfiles();
+}
+async function dupP(pid){ const r = await jpost(`/api/profiles/${pid}/duplicate`,{}); toast(r.profile?'⧉ Diduplikasi':'❌ gagal'); loadProfiles(); }
+async function launchP(pid, btn){
+  if(btn){ btn.disabled = true; btn.dataset.orig = btn.innerHTML; btn.innerHTML = '⏳ ...'; }
+  try{
+    const r = await jpost(`/api/profiles/${pid}/launch`,{});
+    if(r.ok){ toast('▶ Running'); }
+    else dialog('❌ Launch gagal: '+(r.error||'unknown error'), 'Launch Gagal');
+  }catch(e){ dialog('❌ Launch gagal: '+e.message, 'Launch Gagal'); }
+  finally{ if(btn){ btn.disabled = false; btn.innerHTML = btn.dataset.orig || '▶ Launch'; } }
+  loadProfiles();
+}
+async function stopP(pid){ const r = await jpost(`/api/profiles/${pid}/stop`,{}); toast('⏹ Stopped'); loadProfiles(); }
+async function previewFp(){
+  const pid = document.getElementById('edId').value;
+  if(!pid){ toast('Simpan dulu untuk preview'); return; }
+  // save current flags first via temp update
+  await jpost(`/api/profiles/${pid}`, {fingerprint:{features:collectFlags()}}, 'PUT');
+  const d = await jget(`/api/profiles/${pid}/preview`);
+  document.getElementById('previewOut').innerHTML = d.ok
+    ? `JS: ${d.js_length} chars • ${d.features_enabled}/${d.features_total} teknik • WARP:${d.warp_fallback?'✅':'❌'}`
+    : '❌ '+(d.error||'gagal');
+}
+async function exportCookies(pid){
+  const d = await jget(`/api/profiles/${pid}/cookies`);
+  const blob = new Blob([JSON.stringify(d.cookies,null,2)],{type:'application/json'});
+  const a = document.createElement('a'); a.href=URL.createObjectURL(blob); a.download=`cookies-${pid}.json`; a.click();
+  toast(`🍪 ${d.cookies.length} cookies diekspor`);
+}
+/* ── Batch Import ── */
+function openBatch(){ document.getElementById('batchModal').classList.remove('hidden'); document.getElementById('batchPreview').innerHTML=''; document.getElementById('batchResult').innerHTML=''; document.getElementById('batchGoBtn').classList.add('hidden'); loadBatchJobs(); }
+function closeBatch(){ document.getElementById('batchModal').classList.add('hidden'); }
+function batchFmt(){ const f=document.getElementById('batchFile').files[0]; if(!f) return null; return f.name.toLowerCase().endsWith('.json')?'json':'csv'; }
+async function previewBatch(){
+  const inp = document.getElementById('batchFile');
+  if(!inp.files[0]){ toast('Pilih file dulu'); return; }
+  const fmt = batchFmt();
+  const fd = new FormData(); fd.append('file', inp.files[0]);
+  const r = await fetch(API+'/api/profiles/import?preview=1',{method:'POST',body:fd}).then(x=>x.json());
+  if(r.error){ toast('❌ '+r.error); return; }
+  const rows = r.rows||[], errs = r.parse_errors||[];
+  let h = `<div class="meta">${rows.length} baris valid${errs.length?` • <span style="color:var(--err)">${errs.length} error</span>`:''}</div>`;
+  if(rows.length) h += `<table style="width:100%;font-size:12px;margin-top:6px"><tr><td><b>Baris</b></td><td><b>Nama</b></td><td><b>Grup</b></td><td><b>Pool</b></td><td><b>Platform</b></td></tr>` +
+    rows.map(x=>`<tr><td>${x.line}</td><td>${esc(x.name)}</td><td>${esc(x.group)}</td><td>${esc(x.pool)}</td><td>${esc(x.platform)}</td></tr>`).join('') + `</table>`;
+  if(errs.length) h += `<div style="color:var(--err);font-size:12px;margin-top:6px">` + errs.map(e=>`Baris ${e.line}${e.name?` (${esc(e.name)})`:''}: ${esc(e.error)}`).join('<br>') + `</div>`;
+  document.getElementById('batchPreview').innerHTML = h;
+  document.getElementById('batchGoBtn').classList.toggle('hidden', rows.length===0);
+}
+async function doBatchImport(){
+  const inp = document.getElementById('batchFile');
+  const fd = new FormData(); fd.append('file', inp.files[0]);
+  toast('⏳ Importing...');
+  const r = await fetch(API+'/api/profiles/import',{method:'POST',body:fd}).then(x=>x.json());
+  const s = r.summary||{success:0,failed:0};
+  let h = `✅ <b>${s.success}</b> berhasil • ❌ <b>${s.failed}</b> gagal`;
+  if((r.failed||[]).length) h += `<div style="color:var(--err);font-size:12px;margin-top:4px">` + r.failed.map(e=>`Baris ${e.line}${e.name?` (${esc(e.name)})`:''}: ${esc(e.error)}`).join('<br>') + `</div>`;
+  document.getElementById('batchResult').innerHTML = h;
+  document.getElementById('batchGoBtn').classList.add('hidden');
+  loadProfiles();
+}
+
+/* ── Fingerprint Generator ── */
+let fpgenOs = 'windows', fpgenMode = 'random', fpgenIdent = null, fpgenOpts = null;
+function openFpgen(){
+  document.getElementById('fpgenModal').classList.remove('hidden');
+  document.getElementById('fpgenPreview').innerHTML = '';
+  document.getElementById('fpgenWarn').innerHTML = '';
+  document.getElementById('fpgenResult').innerHTML = '';
+  fpgenSetOs(fpgenOs);
+  fpgenLoadProfiles();
+}
+function closeFpgen(){ document.getElementById('fpgenModal').classList.add('hidden'); }
+function fpgenSetOs(os){
+  fpgenOs = os;
+  document.querySelectorAll('.fpOs').forEach(b=>b.classList.toggle('ghost', b.dataset.os!==os));
+  const mobile = (os==='android'||os==='ios');
+  document.getElementById('fpgenChromeWrap').classList.toggle('hidden', mobile);
+  document.getElementById('fpgenCountryWrap').classList.toggle('hidden', !mobile);
+  jget('/api/fingerprint/options?os='+os).then(d=>{
+    fpgenOpts = d.options||{};
+    const tzOpts = (fpgenOpts.timezones||[]).map(t=>`<option value="${t.timezone}">${t.timezone} (${t.locale})</option>`).join('');
+    document.getElementById('fpgenTz').innerHTML = tzOpts;
+    document.getElementById('fpgenMTz').innerHTML = tzOpts;
+    document.getElementById('fpgenTz').value = 'Asia/Jakarta';
+    document.getElementById('fpgenMTz').value = 'Asia/Jakarta';
+    const chOpts = '<option value="">Acak</option>' + (fpgenOpts.chrome_versions||[]).map(v=>`<option>${v}</option>`).join('');
+    document.getElementById('fpgenChrome').innerHTML = chOpts;
+    document.getElementById('fpgenMChrome').innerHTML = (fpgenOpts.chrome_versions||[]).map(v=>`<option>${v}</option>`).join('');
+    const cOpts = (fpgenOpts.timezones||[]).map(t=>`<option value="${t.country}">${t.country} — ${t.timezone}</option>`).join('');
+    document.getElementById('fpgenCountry').innerHTML = cOpts;
+    document.getElementById('fpgenCountry').value = 'id';
+    const locs = [...new Set((fpgenOpts.timezones||[]).map(t=>t.locale))].sort();
+    document.getElementById('fpgenMLocale').innerHTML = '<option value="">Auto dari timezone</option>' + locs.map(l=>`<option>${l}</option>`).join('');
+    document.getElementById('fpgenMGpu').innerHTML = (fpgenOpts.gpus||[]).map((g,i)=>`<option value="${i}">${esc(g.label)}</option>`).join('');
+    document.getElementById('fpgenMScreen').innerHTML = (fpgenOpts.screens||[]).map((s,i)=>`<option value="${i}">${esc(s.label)}</option>`).join('');
+    document.getElementById('fpgenMCores').innerHTML = (fpgenOpts.cores||[]).map(c=>`<option>${c}</option>`).join('');
+    document.getElementById('fpgenMMem').innerHTML = (fpgenOpts.mems||[]).map(m=>`<option>${m}</option>`).join('');
+  });
+}
+function fpgenSetMode(m){
+  fpgenMode = m;
+  document.getElementById('fpgenTabR').classList.toggle('ghost', m!=='random');
+  document.getElementById('fpgenTabM').classList.toggle('ghost', m!=='manual');
+  document.getElementById('fpgenRandom').classList.toggle('hidden', m!=='random');
+  document.getElementById('fpgenManual').classList.toggle('hidden', m!=='manual');
+}
+async function fpgenGenerate(){
+  document.getElementById('fpgenResult').innerHTML = '⏳ Generating...';
+  const body = {os: fpgenOs, timezone: document.getElementById('fpgenTz').value,
+    chrome_ver: document.getElementById('fpgenChrome').value || null,
+    country: document.getElementById('fpgenCountry').value};
+  const r = await jpost('/api/fingerprint/generate', body);
+  if(r.error){ document.getElementById('fpgenResult').innerHTML = '❌ '+esc(r.error); return; }
+  fpgenIdent = r.identity;
+  document.getElementById('fpgenResult').innerHTML = '';
+  fpgenPreview();
+}
+async function fpgenManualBuild(){
+  if(fpgenOs==='android'||fpgenOs==='ios'){
+    document.getElementById('fpgenWarn').innerHTML = '⚠️ Mobile: GPU otomatis dari SoC — pakai mode Random untuk mobile.';
+    return;
+  }
+  const gi = +document.getElementById('fpgenMGpu').value || 0;
+  const si = +document.getElementById('fpgenMScreen').value || 0;
+  const g = (fpgenOpts.gpus||[])[gi]||{}, s = (fpgenOpts.screens||[])[si]||{};
+  const chrome = document.getElementById('fpgenMChrome').value;
+  const tz = document.getElementById('fpgenMTz').value;
+  const locale = document.getElementById('fpgenMLocale').value || null;
+  const gen = await jpost('/api/fingerprint/generate', {os: fpgenOs, timezone: tz, chrome_ver: chrome});
+  if(gen.error){ document.getElementById('fpgenResult').innerHTML = '❌ '+esc(gen.error); return; }
+  const ident = gen.identity;
+  // override dengan pilihan manual
+  ident.gpu_vendor = g.vendor||ident.gpu_vendor; ident.gpu_renderer = g.renderer||ident.gpu_renderer; ident.gpu_class = g.class||ident.gpu_class;
+  ident.screen_w = s.w||ident.screen_w; ident.screen_h = s.h||ident.screen_h; ident.dpr = (s.dpr??ident.dpr);
+  ident.hw = +document.getElementById('fpgenMCores').value || ident.hw;
+  ident.mem = +document.getElementById('fpgenMMem').value || ident.mem;
+  ident.timezone = tz; ident.locale = locale; ident.chrome_ver = chrome||ident.chrome_ver;
+  const sw = ident.screen_w, sh = ident.screen_h;
+  ident.vp = [Math.max(320, sw-200), Math.max(240, sh-160)];
+  fpgenIdent = ident;
+  fpgenPreview();
+}
+async function fpgenPreview(){
+  if(!fpgenIdent) return;
+  const r = await jpost('/api/fingerprint/preview', {identity: fpgenIdent});
+  if(r.error){ document.getElementById('fpgenPreview').innerHTML = '❌ '+esc(r.error); return; }
+  const p = r.preview||{};
+  const warn = (p.warnings||[]);
+  document.getElementById('fpgenWarn').innerHTML = warn.length
+    ? '⚠️ <b>Tidak konsisten:</b><br>• ' + warn.map(esc).join('<br>• ') : '✅ <b>Konsisten</b> — ngotak.';
+  document.getElementById('fpgenPreview').innerHTML =
+    `<b>User-Agent:</b> ${esc((p.user_agent||'').slice(0,110))}...<br>`+
+    `<b>Platform:</b> ${esc(p.platform||'')} • <b>Layar:</b> ${esc(p.screen||'')} • <b>CPU:</b> ${p.cores} core • <b>RAM:</b> ${p.memory_gb} GB<br>`+
+    `<b>GPU:</b> ${esc((p.gpu||'').slice(0,90))}<br>`+
+    `<b>Timezone:</b> ${esc(p.timezone||'')} • <b>Locale:</b> ${esc(p.locale||'')} • <b>webdriver:</b> ${p.webdriver} • <b>JS:</b> ${(p.js_length||0).toLocaleString()} char`;
+}
+async function fpgenLoadProfiles(){
+  const d = await jget('/api/profiles');
+  const ps = (d.profiles||[]).filter(p=>!p.deleted);
+  document.getElementById('fpgenProfile').innerHTML = ps.map(p=>`<option value="${p.id}">${esc(p.name)}</option>`).join('') || '<option value="">(belum ada profil)</option>';
+}
+async function fpgenTest(){
+  const pid = document.getElementById('fpgenProfile').value;
+  if(!pid || !fpgenIdent){ toast('Pilih profil & generate dulu'); return; }
+  document.getElementById('fpgenResult').innerHTML = '⏳ Launching browser...';
+  const r = await jpost('/api/profiles/'+pid+'/launch', {identity: fpgenIdent, url: 'https://browserleaks.com/javascript'});
+  document.getElementById('fpgenResult').innerHTML = r.ok ? '✅ Browser kebuka — cek browserleaks.com' : '❌ '+esc(r.error||'gagal');
+  if(r.ok) loadProfiles();
+}
+async function fpgenSave(){
+  const pid = document.getElementById('fpgenProfile').value;
+  if(!pid || !fpgenIdent){ toast('Pilih profil & generate dulu'); return; }
+  const r = await jpost('/api/profiles/'+pid+'/fingerprint', {identity: fpgenIdent});
+  document.getElementById('fpgenResult').innerHTML = r.ok ? '✅ Tersimpan ke profil' : '❌ '+esc(r.error||'gagal');
+  if(r.ok) loadProfiles();
+}
+function fpgenCopy(){
+  if(!fpgenIdent){ toast('Generate dulu'); return; }
+  navigator.clipboard.writeText(JSON.stringify(fpgenIdent, null, 2)).then(()=>toast('📋 JSON ter-copy'));
+}
+
+// ── 🔌 Local API settings ──
+let apiCfg = {port:50325, api_key_set:false, running:false};
+function toggleApi(){ showView('api'); }
+async function loadApiSettings(){
+  const r = await jget('/api/settings/api');
+  if(r.error){ toast(r.error); return; }
+  apiCfg = r;
+  document.getElementById('apiPort').value = r.port;
+  document.getElementById('apiEnabled').checked = !!r.enabled;
+  document.getElementById('apiKey').value = '';
+  document.getElementById('apiKey').placeholder = r.api_key_set ? '•••••• tersimpan (isi untuk ganti)' : 'kosong = tanpa auth';
+  renderApiStatus();
+}
+function renderApiStatus(){
+  const r = apiCfg;
+  const badge = document.getElementById('apiStatusBadge');
+  const txt = document.getElementById('apiStatusText');
+  const btn = document.getElementById('apiToggleBtn');
+  badge.textContent = r.running ? '● RUNNING' : '○ STOPPED';
+  badge.style.background = r.running ? 'var(--ok)' : 'var(--border)';
+  txt.textContent = r.running ? `http://127.0.0.1:${r.port}` + (r.pid ? ` (pid ${r.pid})` : '') : 'API mati';
+  btn.textContent = r.running ? '⏹ Stop API' : '▶ Start API';
+  renderCurlExamples();
+}
+function _keyForCurl(){
+  // placeholder — key asli tidak pernah dikirim ke browser
+  return apiCfg.api_key_set ? ' -H "X-API-Key: KEY_KAMU"' : '';
+}
+function renderCurlExamples(){
+  const p = document.getElementById('apiPort').value || apiCfg.port || 50325;
+  const k = _keyForCurl();
+  const b = `http://127.0.0.1:${p}`;
+  document.getElementById('curlExamples').textContent =
+`# Status
+curl -s ${b}/api/v1/status${k}
+
+# List profil
+curl -s "${b}/api/v1/user/list?page_size=100"${k}
+
+# Bikin profil
+curl -s -X POST ${b}/api/v1/user/create${k} -H "Content-Type: application/json" \\
+  -d '{"name":"akun1","group":"bugbounty"}'
+
+# Launch browser
+curl -s "${b}/api/v1/browser/start?user_id=ID_PROFIL"${k}
+
+# Stop browser
+curl -s "${b}/api/v1/browser/stop?user_id=ID_PROFIL"${k}
+
+# Hapus profil (ke Trash)
+curl -s -X POST ${b}/api/v1/user/delete${k} -H "Content-Type: application/json" \\
+  -d '{"user_id":"ID_PROFIL"}'`;
+  document.getElementById('cliExamples').textContent =
+`# dari folder antibrowser/ (atau termux, path disesuaikan)
+python3 antibrowser-cli.py list
+python3 antibrowser-cli.py create --name "akun1" --group "bugbounty"
+python3 antibrowser-cli.py launch ID_PROFIL
+python3 antibrowser-cli.py stop ID_PROFIL
+python3 antibrowser-cli.py delete ID_PROFIL`;
+}
+async function apiToggle(){
+  const btn = document.getElementById('apiToggleBtn');
+  btn.textContent = '⏳ ...';
+  const r = await jpost('/api/settings/api/' + (apiCfg.running ? 'stop' : 'start'), {});
+  if(r.ok === false){ toast('❌ '+esc(r.msg||'gagal')); }
+  await loadApiSettings();
+}
+async function saveApiSettings(){
+  const port = parseInt(document.getElementById('apiPort').value, 10);
+  const keyInput = document.getElementById('apiKey').value;
+  const body = {port: port, enabled: document.getElementById('apiEnabled').checked};
+  if(keyInput) body.api_key = keyInput; // kosong = jangan ubah
+  const r = await jpost('/api/settings/api', body, 'PUT');
+  const msg = document.getElementById('apiMsg');
+  if(r.error){ msg.textContent = '❌ '+r.error; return; }
+  msg.textContent = '✅ Tersimpan' + (r.running ? ' — API running' : '');
+  await loadApiSettings();
+}
+async function genApiKey(){
+  if(!confirm('Generate API key baru? Key lama tidak berlaku lagi.')) return;
+  const r = await jpost('/api/settings/api/key', {});
+  if(r.api_key){
+    document.getElementById('apiMsg').innerHTML = '✅ Key baru: <code>'+esc(r.api_key)+'</code> — simpan! (cuma ditampilkan sekali)';
+    await loadApiSettings();
+  }
+}
+async function clearApiKey(){
+  if(!confirm('Hapus API key? (auth dimatikan)')) return;
+  const r = await jpost('/api/settings/api', {api_key: ''}, 'PUT');
+  document.getElementById('apiMsg').textContent = r.error ? '❌ '+r.error : '✅ Key dihapus — tanpa auth';
+  await loadApiSettings();
+}
+function copyCurl(){
+  navigator.clipboard.writeText(document.getElementById('curlExamples').textContent)
+    .then(()=>toast('📋 curl ter-copy'));
+}
+
+/* ── Navigasi view (Fase 4: desain fresh) ── */
+const VIEWS = {
+  profil: ['Profil', 'Semua profil browser — klik ▶ untuk jalan, ✏️ untuk ubah.'],
+  cermin: ['Cermin', 'Satu jendela memimpin, aksinya dicerminkan ke semua jendela pengikut.'],
+  alur: ['Alur', 'Alur otomasi tersimpan + cek sidik live lawan browser yang jalan.'],
+  kernel: ['Kernel', 'Mesin browser tiap profil — unduh versi baru atau daftarkan binary sendiri.'],
+  cadangan: ['Cadangan', 'Ekspor profil lengkap ke ZIP, restore jadi profil baru.'],
+  ekstensi: ['Ekstensi', 'Library extension + assignment per profil.'],
+  pool: ['Pool Proxy', 'Daftar proxy per pool — test, edit, jadikan default.'],
+  api: ['API Lokal', 'Kontrol browser dari script/CLI via HTTP.'],
+  sampah: ['Sampah', 'Profil terhapus — restore kapan aja, atau hapus permanen.'],
+  editor: ['Editor Profil', 'Buat / ubah profil — identitas, proxy, fingerprint.'],
+};
+function showView(name){
+  if(!VIEWS[name]) name = 'profil';
+  document.querySelectorAll('.view').forEach(v=>v.classList.add('hidden'));
+  const el = document.getElementById('view-'+name);
+  if(el) el.classList.remove('hidden');
+  document.querySelectorAll('.navbtn').forEach(b=>b.classList.remove('on'));
+  const nav = document.getElementById('nav-'+name);
+  if(nav) nav.classList.add('on');
+  document.getElementById('viewTitle').textContent = VIEWS[name][0];
+  document.getElementById('viewSub').textContent = VIEWS[name][1];
+  document.getElementById('statStrip').style.display = name==='profil' ? '' : 'none';
+  if(location.hash !== '#'+name) history.replaceState(null,'','#'+name);
+  if(name==='pool') loadPoolList();
+  if(name==='ekstensi') loadExtList();
+  if(name==='sampah') loadTrash();
+  if(name==='api') loadApiSettings();
+  if(name==='cermin') loadSyncStatus();
+  if(name==='kernel') loadKernels();
+  if(name==='cadangan') loadBackups();
+  if(name==='alur'){ loadRpaFlows(); fillFpCheckProfiles(); rpaLoadTemplates(); rpaMultiLoadProfiles(); rpaMultiLoadJobs(); if(!document.querySelector('#rpaStepList .rpa-step-row')) rpaRenderSteps([]); }
+  window.scrollTo(0,0);
+}
+async function checkAuthStatus(){
+  try{
+    const d = await jget('/api/auth/status');
+    document.getElementById('logoutBtn').style.display = d.authenticated ? '' : 'none';
+  }catch(e){}
+}
+async function logoutGui(){
+  await jpost('/api/auth/logout', {});
+  location.reload();
+}
+
+/* ── Cermin ── */
+let SYNC_RUNNING = [];
+async function loadSyncStatus(){
+  try{
+    const st = await jget('/api/sync/status');
+    const d = await jget('/api/profiles');
+    SYNC_RUNNING = (d.profiles||[]).filter(p=>p.status==='running');
+    const b = document.getElementById('syncBadge');
+    b.textContent = st.active ? '● jalan' : 'mati';
+    b.className = 'badge ' + (st.active ? 'running' : 'amber');
+    const pname = id => { const p = (SYNC_RUNNING.find(x=>x.id===id)||{}); return p.name ? p.name+' ('+id.slice(0,8)+')' : (id||'—'); };
+    document.getElementById('syncLeader').textContent = st.leader_id ? pname(st.leader_id) : '—';
+    document.getElementById('syncFollowers').textContent = (st.followers||[]).map(pname).join(', ') || '—';
+    document.getElementById('syncDelay').textContent = (st.open_delay_ms||0) + ' ms';
+    document.getElementById('syncRange').textContent = st.range || 'all';
+    const opts = SYNC_RUNNING.map(p=>`<option value="${p.id}">${esc(p.name)}</option>`).join('');
+    document.getElementById('syncLeaderSel').innerHTML = opts || '<option value="">(tidak ada browser jalan)</option>';
+    if(st.leader_id) document.getElementById('syncLeaderSel').value = st.leader_id;
+    const fl = document.getElementById('syncFollowerList');
+    fl.innerHTML = SYNC_RUNNING.map(p=>`<label class="flag"><input type="checkbox" class="syncF" value="${p.id}" ${p.id!==st.leader_id?'checked':''}> ${esc(p.name)}</label>`).join('') || '<div class="meta">Tidak ada browser jalan.</div>';
+    document.getElementById('syncLog').innerHTML = (st.log||[]).slice(-5).map(x=>esc(typeof x==='string'?x:JSON.stringify(x))).join('<br>');
+    if(st.leader_id) loadSyncTabs(st.leader_id);
+  }catch(e){ /* biarkan panel kosong bila API belum siap */ }
+}
+document.addEventListener('change',e=>{
+  if(e.target.id==='syncRangeSel') document.getElementById('syncFollowerBox').classList.toggle('hidden', e.target.value!=='selected');
+});
+async function syncStart(){
+  const leader = document.getElementById('syncLeaderSel').value;
+  if(!leader){ toast('❌ tidak ada browser jalan — launch profil dulu'); return; }
+  const range = document.getElementById('syncRangeSel').value;
+  const body = {leader_id: leader, open_delay_ms: 0};
+  if(range==='selected') body.follower_ids = Array.from(document.querySelectorAll('.syncF:checked')).map(c=>c.value);
+  const r = await jpost('/api/sync/start', body);
+  if(r.ok){ await jpost('/api/sync/range', {range}); toast('🪞 Cermin jalan'); }
+  else toast('❌ '+(r.error||'gagal'));
+  loadSyncStatus();
+}
+async function syncStop(){ const r = await jpost('/api/sync/stop', {}); toast(r.ok?'⏹ Cermin berhenti':'❌ '+(r.error||'gagal')); loadSyncStatus(); }
+async function syncOpenUrl(){
+  const u = document.getElementById('syncUrl').value.trim();
+  if(!u){ toast('❌ isi URL dulu'); return; }
+  const r = await jpost('/api/sync/open-url', {url: u});
+  toast(r.ok?'🌐 Dibuka di semua jendela':'❌ '+(r.error||'gagal'));
+}
+async function syncInput(){
+  const t = document.getElementById('syncText').value;
+  if(!t){ toast('❌ isi teks dulu'); return; }
+  const r = await jpost('/api/sync/input', {text: t});
+  toast(r.ok?'⌨️ Terkirim ke semua jendela':'❌ '+(r.error||'gagal'));
+}
+async function syncRefresh(){ const r = await jpost('/api/sync/refresh', {}); toast(r.ok?'🔄 Semua tab di-refresh':'❌ '+(r.error||'gagal')); }
+async function syncSteps(){
+  const fname = document.getElementById('syncFlowSel').value;
+  if(!fname){ toast('❌ belum ada alur — buat di view Alur'); return; }
+  const f = await jget('/api/rpa/flows/'+encodeURIComponent(fname));
+  if(!f.ok){ toast('❌ '+(f.error||'alur tidak ditemukan')); return; }
+  const r = await jpost('/api/sync/steps', {steps: f.steps});
+  toast(r.ok?'▶ Alur dijalankan di semua jendela':'❌ '+(r.error||'gagal'));
+}
+async function loadSyncTabs(pid){
+  try{
+    const d = await jget('/api/sync/tabs/'+pid);
+    const tabs = d.tabs||[];
+    document.getElementById('syncTabs').innerHTML = tabs.length
+      ? '<label class="lbl">Tab pemimpin</label>' + tabs.map(t=>`<div class="meta">• ${esc(t.title||t.url||t.id)} ${t.active?'<span class="badge running">aktif</span>':''}</div>`).join('')
+      : '';
+  }catch(e){}
+}
+
+/* ── Kernel ── */
+async function loadKernels(){
+  try{
+    const d = await jget('/api/kernels');
+    const rows = [];
+    if(d.system) rows.push({...d.system, _sys:true});
+    (d.kernels||[]).forEach(k=>rows.push(k));
+    document.getElementById('kernelList').innerHTML = rows.map(k=>`
+      <div class="card" style="margin-bottom:8px">
+        <h3>${esc(k.name||k.id)} ${k.is_default||d.default===k.id?'<span class="badge amber">⭐ default</span>':''} ${k._sys?'<span class="badge">sistem</span>':''}</h3>
+        <div class="meta"><span>${esc(k.engine||'chromium')}</span><span>v${esc(k.version||'?')}</span>${k.path?`<span>${esc(k.path)}</span>`:''}</div>
+        <div class="row">
+          ${k._sys?'':`<button class="ghost small" onclick="kernelSetDefault('${k.id}')">⭐ Jadikan default</button>
+          <button class="danger small" onclick="kernelDelete('${k.id}')">🗑 Hapus</button>`}
+        </div>
+      </div>`).join('') || '<div class="meta">Belum ada kernel.</div>';
+    loadKernelJobs();
+  }catch(e){}
+}
+async function loadKernelJobs(){
+  try{
+    const d = await jget('/api/kernels/downloads');
+    const jobs = d.jobs||[];
+    document.getElementById('kernelJobs').innerHTML = jobs.length ? jobs.map(j=>{
+      const pct = j.total ? Math.round(100*(j.downloaded||0)/j.total) : null;
+      return `<div class="card" style="margin-bottom:8px">
+        <h3>${esc(j.version||j.job_id||'?')} <span class="badge ${j.state==='done'?'running':''}">${esc(j.state||'')}</span></h3>
+        ${pct!==null?`<div class="prog"><i style="width:${pct}%"></i></div><div class="meta">${pct}% • ${esc(String(j.downloaded||0))} / ${esc(String(j.total||''))} byte</div>`:''}
+        ${j.error?`<div class="meta" style="color:var(--err)">${esc(j.error)}</div>`:''}
+      </div>`;}).join('') : '<div class="meta">Belum ada unduhan.</div>';
+  }catch(e){}
+}
+async function kernelDownload(){
+  const v = document.getElementById('kernelVer').value.trim();
+  const r = await jpost('/api/kernels/download', {version: v||undefined});
+  toast(r.ok ? '⬇️ Unduhan dimulai (job '+r.job_id+')' : '❌ '+(r.error||'gagal'));
+  loadKernelJobs();
+}
+async function kernelRegister(){
+  const path = document.getElementById('kernelPath').value.trim();
+  if(!path){ toast('❌ isi path binary dulu'); return; }
+  const r = await jpost('/api/kernels/register', {path, name: document.getElementById('kernelName').value.trim()||undefined, engine: document.getElementById('kernelEngine').value});
+  toast(r.ok ? '✅ Kernel terdaftar: '+r.kernel.name : '❌ '+(r.error||'gagal'));
+  if(r.ok) loadKernels();
+}
+async function kernelSetDefault(kid){ const r = await jpost('/api/kernels/'+kid+'/default', {}); toast(r.ok?'⭐ Default diganti':'❌ '+(r.error||'gagal')); loadKernels(); }
+async function kernelDelete(kid){ if(!confirm('Hapus kernel ini dari registry? (file binary tidak dihapus)')) return;
+  const r = await fetch(API+'/api/kernels/'+kid,{method:'DELETE'}).then(x=>x.json());
+  toast(r.ok?'🗑 Dihapus':'❌ '+(r.error||'gagal')); loadKernels(); }
+
+/* ── Cadangan (Backup) ── */
+async function loadBackups(){
+  try{
+    const d = await jget('/api/backups');
+    document.getElementById('backupList').innerHTML = (d.backups||[]).map(b=>`
+      <div class="card" style="margin-bottom:8px">
+        <h3>${esc(b.profile_name||b.file)} ${b.valid?'':'<span class="badge">⚠️ rusak</span>'}</h3>
+        <div class="meta"><span>📦 ${esc(b.human||((b.bytes||0)+' byte'))}</span><span>🕒 ${esc((b.exported_at||'').slice(0,19).replace('T',' '))}</span>${b.include_cache?'<span>cache ikut</span>':''}</div>
+        <div class="row">
+          <button class="small" onclick="backupRestore('${esc(b.file)}')">♻️ Restore jadi profil baru</button>
+          <button class="danger small" onclick="backupDelete('${esc(b.file)}')">🗑 Hapus file</button>
+        </div>
+      </div>`).join('') || '<div class="meta">Belum ada cadangan.</div>';
+    const pd = await jget('/api/profiles');
+    document.getElementById('backupProfileSel').innerHTML = (pd.profiles||[]).map(p=>`<option value="${p.id}">${esc(p.name)}</option>`).join('') || '<option value="">(belum ada profil)</option>';
+  }catch(e){}
+}
+async function backupCreate(){
+  const pid = document.getElementById('backupProfileSel').value;
+  if(!pid){ toast('❌ pilih profil dulu'); return; }
+  const r = await jpost('/api/profiles/'+pid+'/backup', {include_cache: document.getElementById('backupCache').checked});
+  toast(r.ok ? '💾 Cadangan dibuat: '+r.file : '❌ '+(r.error||'gagal'));
+  if(r.ok) loadBackups();
+}
+async function backupP(pid){
+  const r = await jpost('/api/profiles/'+pid+'/backup', {include_cache: true});
+  toast(r.ok ? '💾 Cadangan dibuat: '+r.file : '❌ '+(r.error||'gagal'));
+  if(r.ok) loadBackups();
+}
+async function backupRestore(fname){
+  const r = await jpost('/api/backups/'+encodeURIComponent(fname)+'/restore', {});
+  toast(r.ok ? '♻️ Di-restore jadi profil "'+r.profile.name+'"' : '❌ '+(r.error||'gagal'));
+  if(r.ok){ loadBackups(); loadProfiles(); }
+}
+async function backupDelete(fname){
+  if(!confirm('Hapus file cadangan ini?')) return;
+  const r = await fetch(API+'/api/backups/'+encodeURIComponent(fname),{method:'DELETE'}).then(x=>x.json());
+  toast(r.ok?'🗑 Dihapus':'❌ '+(r.error||'gagal')); loadBackups();
+}
+
+/* ── Alur (RPA) + Cek Sidik ── */
+async function loadRpaFlows(){
+  try{
+    const d = await jget('/api/rpa/flows');
+    const flows = d.flows||[];
+    document.getElementById('rpaFlowList').innerHTML = flows.map(f=>`
+      <div class="card" style="margin-bottom:8px">
+        <h3>${esc(f.name)} <span class="badge">${f.steps} langkah</span></h3>
+        <div class="meta"><span>🕒 ${esc((f.updated_at||'').slice(0,19).replace('T',' '))}</span></div>
+        <div class="row">
+          <button class="small" onclick="rpaRunFlow('${esc(f.name)}')">▶ Jalankan</button>
+          <button class="danger small" onclick="rpaDeleteFlow('${esc(f.name)}')">🗑 Hapus</button>
+        </div>
+      </div>`).join('') || '<div class="meta">Belum ada alur — simpan dari form di atas.</div>';
+    document.getElementById('syncFlowSel').innerHTML = flows.map(f=>`<option value="${esc(f.name)}">${esc(f.name)} (${f.steps})</option>`).join('') || '<option value="">(belum ada alur)</option>';
+    document.getElementById('rpaMultiFlow').innerHTML = flows.map(f=>`<option value="${esc(f.name)}">${esc(f.name)} (${f.steps})</option>`).join('') || '<option value="">(belum ada alur)</option>';
+  }catch(e){}
+}
+async function rpaSaveFlow(){
+  const name = document.getElementById('rpaFlowName').value.trim();
+  let steps;
+  try{ steps = JSON.parse(document.getElementById('rpaFlowSteps').value||'[]'); }
+  catch(e){ toast('❌ Langkah bukan JSON valid: '+e.message); return; }
+  if(!name){ toast('❌ isi nama alur dulu'); return; }
+  const r = await jpost('/api/rpa/flows', {name, steps});
+  toast(r.ok ? '✅ Alur "'+r.name+'" tersimpan ('+r.steps+' langkah)' : '❌ '+(r.error||'gagal'));
+  if(r.ok) loadRpaFlows();
+}
+async function rpaRunFlow(name){
+  const pid = document.getElementById('fpCheckProfile').value;
+  if(!pid){ toast('❌ pilih profil yang sedang jalan di bagian Cek Sidik'); return; }
+  const r = await jpost('/api/profiles/'+pid+'/rpa', {flow: name});
+  toast(r.ok ? '▶ Alur "'+name+'" dijalankan' : '❌ '+(r.error||'gagal'));
+}
+async function rpaDeleteFlow(name){
+  if(!confirm('Hapus alur "'+name+'"?')) return;
+  const r = await fetch(API+'/api/rpa/flows/'+encodeURIComponent(name),{method:'DELETE'}).then(x=>x.json());
+  toast(r.ok?'🗑 Dihapus':'❌ '+(r.error||'gagal')); loadRpaFlows();
+}
+/* ── Builder Alur visual (F5-1) ── */
+const RPA_STEP_TYPES = ['goto','click','type','wait','scroll','press'];
+const RPA_STEP_FIELDS = {goto:['url'], click:['selector'], type:['selector','text'], wait:['ms'], scroll:['delta_y'], press:['key']};
+const RPA_FIELD_PH = {url:'https://…', selector:'selector (#id / .class)', text:'teks', ms:'ms', delta_y:'delta_y', key:'key (Enter/Tab)'};
+function rpaStepRowHtml(i, s){
+  s = s || {type:'goto', url:''};
+  const opts = RPA_STEP_TYPES.map(t=>`<option value="${t}"${t===s.type?' selected':''}>${t}</option>`).join('');
+  const val = f => esc(String(s[f] ?? ''));
+  return `<div class="rpa-step-row row" data-i="${i}" style="flex-wrap:wrap">
+    <span class="badge">${i+1}</span>
+    <select class="rpa-step-type" onchange="rpaStepFieldChange(this)">${opts}</select>
+    <input class="rpa-f-url" data-field="url" placeholder="${RPA_FIELD_PH.url}" value="${val('url')}" style="flex:2" oninput="rpaSyncJsonFromRows()">
+    <input class="rpa-f-selector" data-field="selector" placeholder="${RPA_FIELD_PH.selector}" value="${val('selector')}" style="flex:2" oninput="rpaSyncJsonFromRows()">
+    <input class="rpa-f-text" data-field="text" placeholder="${RPA_FIELD_PH.text}" value="${val('text')}" style="flex:1" oninput="rpaSyncJsonFromRows()">
+    <input class="rpa-f-ms" data-field="ms" type="number" placeholder="${RPA_FIELD_PH.ms}" value="${val('ms')}" style="width:80px" oninput="rpaSyncJsonFromRows()">
+    <input class="rpa-f-delta" data-field="delta_y" type="number" placeholder="${RPA_FIELD_PH.delta_y}" value="${val('delta_y')}" style="width:90px" oninput="rpaSyncJsonFromRows()">
+    <input class="rpa-f-key" data-field="key" placeholder="${RPA_FIELD_PH.key}" value="${val('key')}" style="width:110px" oninput="rpaSyncJsonFromRows()">
+    <button class="ghost small" onclick="rpaMoveStep(${i},-1)">↑</button>
+    <button class="ghost small" onclick="rpaMoveStep(${i},1)">↓</button>
+    <button class="danger small" onclick="rpaDelStep(${i})">✕</button>
+  </div>`;
+}
+function rpaStepFieldChange(sel){
+  const row = sel.closest('.rpa-step-row');
+  const show = RPA_STEP_FIELDS[sel.value] || [];
+  row.querySelectorAll('input[data-field]').forEach(inp=>{
+    inp.style.display = show.includes(inp.dataset.field) ? '' : 'none';
+  });
+  rpaSyncJsonFromRows();
+}
+function rpaRenderSteps(steps){
+  const list = document.getElementById('rpaStepList');
+  list.innerHTML = (steps||[]).map((s,i)=>rpaStepRowHtml(i,s)).join('')
+    || '<div class="meta">Belum ada langkah — tambah di bawah.</div>';
+  list.querySelectorAll('.rpa-step-type').forEach(sel=>rpaStepFieldChange(sel));
+  rpaSyncJsonFromRows();
+}
+function rpaCollectSteps(){
+  const steps = [];
+  document.querySelectorAll('#rpaStepList .rpa-step-row').forEach(row=>{
+    const type = row.querySelector('.rpa-step-type').value;
+    const get = f => { const el = row.querySelector('[data-field="'+f+'"]'); return el ? el.value : ''; };
+    const s = {type};
+    if(type==='goto') s.url = get('url');
+    if(type==='click') s.selector = get('selector');
+    if(type==='type'){ s.selector = get('selector'); s.text = get('text'); }
+    if(type==='wait') s.ms = parseInt(get('ms')||'1000', 10);
+    if(type==='scroll') s.delta_y = parseInt(get('delta_y')||'600', 10);
+    if(type==='press') s.key = get('key');
+    steps.push(s);
+  });
+  return steps;
+}
+function rpaSyncJsonFromRows(){
+  try{ document.getElementById('rpaFlowSteps').value = JSON.stringify(rpaCollectSteps()); }catch(e){}
+}
+function rpaAddStepRow(step){
+  const steps = rpaCollectSteps();
+  steps.push(step || {type:'goto', url:''});
+  rpaRenderSteps(steps);
+}
+function rpaMoveStep(i, dir){
+  const steps = rpaCollectSteps();
+  const j = i + dir;
+  if(j < 0 || j >= steps.length) return;
+  const tmp = steps[i]; steps[i] = steps[j]; steps[j] = tmp;
+  rpaRenderSteps(steps);
+}
+function rpaDelStep(i){
+  const steps = rpaCollectSteps();
+  steps.splice(i, 1);
+  rpaRenderSteps(steps);
+}
+function rpaApplyJson(){
+  let steps;
+  try{ steps = JSON.parse(document.getElementById('rpaFlowSteps').value||'[]'); }
+  catch(e){ toast('❌ Langkah bukan JSON valid: '+e.message); return; }
+  if(!Array.isArray(steps)){ toast('❌ Langkah harus array JSON'); return; }
+  rpaRenderSteps(steps);
+}
+async function rpaLoadFlowIntoBuilder(){
+  const name = document.getElementById('rpaFlowName').value.trim();
+  if(!name){ toast('❌ isi nama alur dulu'); return; }
+  const f = await jget('/api/rpa/flows/'+encodeURIComponent(name));
+  if(!f.ok){ toast('❌ '+(f.error||'alur tidak ditemukan')); return; }
+  rpaRenderSteps(f.steps||[]);
+  toast('📂 Alur "'+name+'" dimuat ke builder');
+}
+async function rpaLoadTemplates(){
+  try{
+    const d = await jget('/api/rpa/templates');
+    document.getElementById('rpaTemplateSel').innerHTML = (d.templates||[]).map(t=>`<option value="${esc(t.key)}">${esc(t.label)}</option>`).join('') || '<option value="">(tidak ada template)</option>';
+  }catch(e){}
+}
+async function rpaUseTemplate(){
+  const key = document.getElementById('rpaTemplateSel').value;
+  if(!key){ toast('❌ pilih template dulu'); return; }
+  const t = await jget('/api/rpa/templates/'+encodeURIComponent(key));
+  if(!t.ok){ toast('❌ '+(t.error||'template tidak ditemukan')); return; }
+  rpaRenderSteps(t.steps||[]);
+  if(!document.getElementById('rpaFlowName').value.trim()) document.getElementById('rpaFlowName').value = 'alur-'+key;
+  toast('📋 Template "'+t.label+'" dimuat ke builder');
+}
+/* ── Rekam Alur (F5-2) ── */
+let rpaRecordTimer = null;
+async function rpaRecordStart(){
+  const pid = document.getElementById('fpCheckProfile').value;
+  if(!pid){ toast('❌ pilih profil yang sedang jalan di bagian Cek Sidik'); return; }
+  const r = await jpost('/api/profiles/'+pid+'/rpa/record/start', {});
+  if(!r.ok){ toast('❌ '+(r.error||'gagal mulai rekam')); return; }
+  document.getElementById('rpaRecordStatus').innerHTML = '● Merekam… (lakukan aksi di browser, lalu ⏹ Berhenti &amp; simpan)';
+  if(rpaRecordTimer) clearInterval(rpaRecordTimer);
+  rpaRecordTimer = setInterval(async ()=>{
+    const d = await jget('/api/profiles/'+pid+'/rpa/record/status');
+    if(d.recording) document.getElementById('rpaRecordStatus').innerHTML = '● Merekam… '+(d.steps_so_far||0)+' langkah terekam';
+    else if(rpaRecordTimer){ clearInterval(rpaRecordTimer); rpaRecordTimer = null; }
+  }, 2000);
+  toast('● Merekam dimulai');
+}
+async function rpaRecordStop(){
+  const pid = document.getElementById('fpCheckProfile').value;
+  if(!pid){ toast('❌ pilih profil yang sedang jalan di bagian Cek Sidik'); return; }
+  const name = document.getElementById('rpaFlowName').value.trim();
+  if(!name){ toast('❌ isi nama alur dulu (buat menyimpan hasil rekaman)'); return; }
+  const r = await jpost('/api/profiles/'+pid+'/rpa/record/stop', {name});
+  if(rpaRecordTimer){ clearInterval(rpaRecordTimer); rpaRecordTimer = null; }
+  if(!r.ok){ toast('❌ '+(r.error||'gagal berhenti rekam')); return; }
+  document.getElementById('rpaRecordStatus').innerHTML = '✅ Rekaman selesai: '+(r.steps||[]).length+' langkah tersimpan sebagai "'+esc(name)+'"';
+  rpaRenderSteps(r.steps||[]);
+  loadRpaFlows();
+}
+/* ── Multi-profil (F5-4) ── */
+async function rpaMultiLoadProfiles(){
+  try{
+    const d = await jget('/api/profiles');
+    const run = (d.profiles||[]).filter(p=>p.status==='running');
+    document.getElementById('rpaMultiProfiles').innerHTML = run.map(p=>`<label class="meta" style="display:block"><input type="checkbox" class="rpa-multi-pid" value="${esc(p.id)}" checked> ${esc(p.name)}</label>`).join('') || '<div class="meta">(tidak ada browser jalan — launch profil dulu)</div>';
+  }catch(e){}
+}
+async function rpaMultiRun(){
+  const flow = document.getElementById('rpaMultiFlow').value;
+  if(!flow){ toast('❌ belum ada alur — buat di view Alur'); return; }
+  const pids = Array.from(document.querySelectorAll('.rpa-multi-pid:checked')).map(el=>el.value);
+  if(!pids.length){ toast('❌ pilih minimal 1 profil'); return; }
+  const r = await jpost('/api/rpa/run-multi', {flow, profile_ids: pids});
+  if(!r.ok){ toast('❌ '+(r.error||'gagal')); return; }
+  toast('▶ Job multi-profil dimulai ('+r.total+' profil)');
+  rpaMultiLoadJobs();
+}
+async function rpaMultiLoadJobs(){
+  try{
+    const d = await jget('/api/rpa/jobs');
+    const jobs = (d.jobs||[]).slice(0,5);
+    document.getElementById('rpaMultiJobs').innerHTML = jobs.map(j=>{
+      const pct = j.total ? Math.round(100*(j.done||0)/j.total) : 0;
+      const res = (j.results||[]).map(x=>`${esc(x.name||x.profile_id)}: ${x.ok?'✅':'❌'}`).join(' • ');
+      return `<div class="card" style="margin-bottom:6px"><div class="meta">🔁 ${esc(j.flow||'')} — ${esc(j.state)} ${j.done||0}/${j.total} (${pct}%) ${j.state==='running'?`<button class="danger small" onclick="rpaMultiCancel('${esc(j.job_id)}')">⏹ Batal</button>`:''}</div><div class="meta">${res}</div></div>`;
+    }).join('') || '<div class="meta">Belum ada job multi-profil.</div>';
+  }catch(e){}
+}
+async function rpaMultiCancel(jobId){
+  const r = await jpost('/api/rpa/jobs/'+encodeURIComponent(jobId)+'/cancel', {});
+  toast(r.ok?'⏹ Job dibatalkan':'❌ '+(r.error||'gagal'));
+  rpaMultiLoadJobs();
+}
+async function fillFpCheckProfiles(){
+  try{
+    const d = await jget('/api/profiles');
+    const run = (d.profiles||[]).filter(p=>p.status==='running');
+    document.getElementById('fpCheckProfile').innerHTML = run.map(p=>`<option value="${p.id}">${esc(p.name)}</option>`).join('') || '<option value="">(tidak ada browser jalan)</option>';
+  }catch(e){}
+}
+function fpCheckRender(out, data){
+  if(!data.ok){ out.innerHTML = '<div class="meta" style="color:var(--err)">❌ '+esc(data.error||'gagal')+'</div>'; return; }
+  const checks = data.checks||[];
+  const okN = checks.filter(c=>c.ok===true).length, badN = checks.filter(c=>c.ok===false).length;
+  out.innerHTML = `<div class="meta">✅ ${okN} cocok • ❌ ${badN} bocor • ℹ️ ${checks.length-okN-badN} info</div>
+    <table class="mini"><tr><th>Field</th><th>Harapan</th><th>Live</th><th></th></tr>` +
+    checks.map(c=>`<tr><td>${esc(c.field)}</td><td>${esc(String(c.expected??'—')).slice(0,60)}</td><td>${esc(String(c.live??'—')).slice(0,60)}</td><td><span class="pill ${c.ok===true?'ok':c.ok===false?'bad':'info'}">${c.ok===true?'PASS':c.ok===false?'FAIL':'INFO'}</span></td></tr>`).join('') + `</table>`;
+}
+async function fpCheck(pid){
+  showView('alur');
+  await fillFpCheckProfiles();
+  document.getElementById('fpCheckProfile').value = pid;
+  fpCheckRun();
+}
+async function fpCheckRun(){
+  const pid = document.getElementById('fpCheckProfile').value;
+  const out = document.getElementById('fpCheckOut');
+  if(!pid){ out.innerHTML = '<div class="meta">❌ tidak ada browser jalan — launch profil dulu.</div>'; return; }
+  out.innerHTML = '<div class="meta">⏳ Mengecek...</div>';
+  const d = await jget('/api/profiles/'+pid+'/fingerprint-check');
+  fpCheckRender(out, d);
+}
+
+/* ── Job Batch ── */
+async function loadBatchJobs(){
+  try{
+    const d = await jget('/api/batch/jobs');
+    const jobs = (d.jobs||[]).slice(0,8);
+    document.getElementById('batchJobsList').innerHTML = jobs.map(j=>{
+      const pct = j.total ? Math.round(100*(j.done||0)/j.total) : 0;
+      return `<div class="card" style="margin-bottom:8px">
+        <h3>${esc(j.kind||'?')} <span class="badge ${j.state==='done'?'running':''}">${esc(j.state||'')}</span> <span class="badge">${esc(j.job_id||'')}</span></h3>
+        <div class="meta"><span>${j.done||0}/${j.total||0}</span><span>🕒 ${esc((j.started_at||'').slice(0,19).replace('T',' '))}</span>${(j.failed||[]).length?`<span style="color:var(--err)">❌ ${j.failed.length} gagal</span>`:''}</div>
+        <div class="prog"><i style="width:${pct}%"></i></div>
+        <div class="row">
+          ${j.state==='running'?`<button class="danger small" onclick="batchCancelJob('${j.job_id}')">⏹ Batalkan</button>`:''}
+          ${j.state==='done'&&j.kind==='export'?`<a href="/api/batch/jobs/${j.job_id}/download"><button class="ghost small">⬇️ Unduh hasil</button></a>`:''}
+        </div>
+      </div>`;}).join('') || '<div class="meta">Belum ada job.</div>';
+  }catch(e){}
+}
+async function batchCancelJob(jid){ const r = await jpost('/api/batch/jobs/'+jid+'/cancel', {}); toast(r.ok?'⏹ Dibatalkan':'❌ '+(r.error||'gagal')); loadBatchJobs(); }
+async function batchExport(){
+  const r = await jpost('/api/profiles/export', {format: 'csv'});
+  toast(r.ok ? '⬆️ Job ekspor dimulai ('+r.job_id+')' : '❌ '+(r.error||'gagal'));
+  if(r.ok) loadBatchJobs();
+}
+
+init();
+</script>
+</body>
+</html>

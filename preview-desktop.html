@@ -1,0 +1,149 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>StealthXGM — Full Desktop Preview</title>
+<style>
+*{box-sizing:border-box;margin:0;padding:0;font-family:'Segoe UI',system-ui,sans-serif}
+body{background:linear-gradient(135deg,#0f0c29,#302b63,#24243e);color:#eee;min-height:100vh;padding:20px}
+h1{text-align:center;margin-bottom:6px;font-size:28px}
+h1 .x{background:linear-gradient(135deg,#e94560,#ff6b6b);-webkit-background-clip:text;-webkit-text-fill-color:transparent}
+.sub{text-align:center;color:#888;margin-bottom:24px;font-size:14px}
+.desktop{background:#1a1a2e;border-radius:16px;padding:20px;max-width:1100px;margin:0 auto 24px;box-shadow:0 20px 60px rgba(0,0,0,.5)}
+.win-bar{display:flex;align-items:center;gap:10px;background:#0d1526;padding:10px 14px;border-radius:10px 10px 0 0;margin:-20px -20px 16px}
+.dots{display:flex;gap:6px}
+.dots span{width:12px;height:12px;border-radius:50%}
+.dots span:nth-child(1){background:#ff5f57}.dots span:nth-child(2){background:#febc2e}.dots span:nth-child(3){background:#28c840}
+.win-title{font-size:13px;color:#aaa;flex:1}
+.badge{background:linear-gradient(135deg,#e94560,#c73650);color:#fff;font-size:11px;padding:4px 12px;border-radius:12px;font-weight:700}
+.toolbar{display:flex;gap:8px;flex-wrap:wrap;margin-bottom:16px}
+.btn{background:#0f3460;border:none;color:#fff;padding:9px 16px;border-radius:8px;cursor:pointer;font-size:13px}
+.btn.primary{background:linear-gradient(135deg,#e94560,#c73650)}
+.grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(260px,1fr));gap:12px}
+.card{background:rgba(255,255,255,.05);border:1px solid rgba(255,255,255,.1);border-radius:12px;padding:14px;backdrop-filter:blur(10px)}
+.card .nm{font-weight:600;margin-bottom:6px;font-size:14px}
+.card .mt{font-size:12px;color:#999;margin-bottom:3px}
+.card .tg{display:flex;gap:6px;margin:8px 0}
+.tg span{font-size:10px;background:rgba(233,69,96,.2);color:#ff8fa3;padding:3px 8px;border-radius:10px}
+.card .ac{display:flex;gap:6px;margin-top:8px}
+.card .ac .btn{flex:1;padding:7px;font-size:12px}
+.dot{width:8px;height:8px;border-radius:50%;display:inline-block;margin-right:6px}
+.dot.on{background:#4caf50;box-shadow:0 0 8px #4caf50}.dot.off{background:#555}
+.browser-mock{border:2px solid #333;border-radius:12px;overflow:hidden;margin-top:8px}
+.b-bar{background:#2d2d2d;padding:10px 14px;display:flex;align-items:center;gap:10px}
+.b-url{background:#1a1a1a;border-radius:6px;padding:6px 14px;font-size:12px;color:#aaa;flex:1}
+.b-prof{background:linear-gradient(135deg,#e94560,#c73650);color:#fff;font-size:11px;padding:5px 12px;border-radius:12px;font-weight:700}
+.newtab{background:linear-gradient(135deg,#1a1a2e 0%,#16213e 50%,#0f3460 100%);padding:40px 30px;min-height:320px;position:relative;overflow:hidden}
+.newtab::before{content:'';position:absolute;top:-50%;right:-20%;width:600px;height:600px;background:radial-gradient(circle,rgba(233,69,96,.15),transparent 70%);pointer-events:none}
+.nt-logo{text-align:center;margin-bottom:24px;position:relative}
+.nt-logo .shield{font-size:48px;filter:drop-shadow(0 4px 12px rgba(233,69,96,.4))}
+.nt-logo h2{font-size:24px;margin-top:8px}
+.nt-logo h2 .x{background:linear-gradient(135deg,#e94560,#ff6b6b);-webkit-background-clip:text;-webkit-text-fill-color:transparent}
+.nt-search{max-width:500px;margin:0 auto 24px;position:relative}
+.nt-search input{width:100%;padding:14px 20px;border-radius:24px;border:1px solid rgba(255,255,255,.2);background:rgba(255,255,255,.08);color:#fff;font-size:14px;backdrop-filter:blur(10px);outline:none}
+.nt-search input::placeholder{color:#888}
+.nt-cards{display:grid;grid-template-columns:1fr 1fr;gap:12px;max-width:600px;margin:0 auto;position:relative}
+.nt-card{background:rgba(255,255,255,.06);border:1px solid rgba(255,255,255,.12);border-radius:12px;padding:14px;backdrop-filter:blur(10px)}
+.nt-card h4{font-size:12px;color:#e94560;margin-bottom:8px;text-transform:uppercase;letter-spacing:1px}
+.nt-card .row{display:flex;justify-content:space-between;font-size:13px;padding:4px 0}
+.nt-card .row span:first-child{color:#888}
+.nt-links{display:flex;gap:10px;justify-content:center;margin-top:20px;flex-wrap:wrap;position:relative}
+.nt-links a{background:rgba(255,255,255,.08);border:1px solid rgba(255,255,255,.15);color:#fff;text-decoration:none;padding:10px 18px;border-radius:10px;font-size:13px;transition:.2s}
+.nt-links a:hover{background:rgba(233,69,96,.3);transform:translateY(-2px)}
+.caption{text-align:center;color:#888;font-size:13px;margin:12px 0 24px}
+.footer{text-align:center;color:#555;font-size:12px;padding:20px}
+</style>
+</head>
+<body>
+<h1>🛡️ Stealth<span class="x">X</span>GM</h1>
+<p class="sub">Full Desktop Preview — tampilan saat dipakai di desktop</p>
+
+<div class="desktop">
+<div class="win-bar">
+<div class="dots"><span></span><span></span><span></span></div>
+<div class="win-title">StealthXGM — Profile Manager</div>
+<div class="badge">v1.0</div>
+</div>
+<div class="toolbar">
+<button class="btn">🌐 Pools</button>
+<button class="btn">🧩 Extensions</button>
+<button class="btn">🎲 Fingerprint</button>
+<button class="btn">🔌 API</button>
+<button class="btn">🗑️ Trash</button>
+<button class="btn primary">+ Profil Baru</button>
+</div>
+<div class="grid">
+<div class="card">
+<div class="nm"><span class="dot on"></span>Akun Toko 1</div>
+<div class="mt">🖥️ Windows 11 · Chrome 155</div>
+<div class="mt">🌐 ID · 103.x.x.x</div>
+<div class="tg"><span>toko</span><span>jual</span></div>
+<div class="ac"><button class="btn primary">🚀 Launch</button><button class="btn">⚙️</button></div>
+</div>
+<div class="card">
+<div class="nm"><span class="dot off"></span>Akun Riset 2</div>
+<div class="mt">🍎 macOS 14 · Chrome 155</div>
+<div class="mt">🌐 SG · 18.x.x.x</div>
+<div class="tg"><span>riset</span></div>
+<div class="ac"><button class="btn primary">🚀 Launch</button><button class="btn">⚙️</button></div>
+</div>
+<div class="card">
+<div class="nm"><span class="dot off"></span>Testing Mobile</div>
+<div class="mt">📱 Android 14 · SD 8 Gen 3</div>
+<div class="mt">🌐 WARP</div>
+<div class="tg"><span>mobile</span><span>test</span></div>
+<div class="ac"><button class="btn primary">🚀 Launch</button><button class="btn">⚙️</button></div>
+</div>
+</div>
+</div>
+<p class="caption">↑ <b>Langkah 1:</b> Buka StealthXGM → klik <b>Launch</b> di profil yang mau dipakai</p>
+
+<div class="desktop">
+<div class="win-bar">
+<div class="dots"><span></span><span></span><span></span></div>
+<div class="win-title">[StealthXGM] Akun Toko 1 — Chromium</div>
+<div class="badge">🟢 Running</div>
+</div>
+<div class="browser-mock">
+<div class="b-bar">
+<div class="dots"><span></span><span></span><span></span></div>
+<div class="b-url">🔒 newtab</div>
+<div class="b-prof">Akun Toko 1</div>
+</div>
+<div class="newtab">
+<div class="nt-logo">
+<div class="shield">🛡️</div>
+<h2>Stealth<span class="x">X</span>GM</h2>
+</div>
+<div class="nt-search">
+<input placeholder="Cari di Google..." readonly>
+</div>
+<div class="nt-cards">
+<div class="nt-card">
+<h4>👤 Profil</h4>
+<div class="row"><span>Nama</span><b>Akun Toko 1</b></div>
+<div class="row"><span>Jaringan</span><b>Indonesia</b></div>
+<div class="row"><span>Mode</span><b>Standar ✓</b></div>
+</div>
+<div class="nt-card">
+<h4>💻 Perangkat</h4>
+<div class="row"><span>Peramban</span><b>Chrome 155</b></div>
+<div class="row"><span>Sistem</span><b>Windows 11</b></div>
+<div class="row"><span>Grafis</span><b>RTX 4060</b></div>
+</div>
+</div>
+<div class="nt-links">
+<a href="#">🔍 Google</a>
+<a href="#">🐙 GitHub</a>
+<a href="#">🌐 Cek IP</a>
+<a href="#">🧪 Uji Tampilan</a>
+</div>
+</div>
+</div>
+</div>
+<p class="caption">↑ <b>Langkah 2:</b> Browser kebuka dengan new tab StealthXGM — cantik, ringan, tersamarkan</p>
+
+<div class="footer">StealthXGM v1.0 — Full Desktop Preview Mockup<br>G = Gil, M = Merra ❤️</div>
+</body>
+</html>
